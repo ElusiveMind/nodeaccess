@@ -5,18 +5,7 @@
  * Install/uninstall functions for Nodeaccess.
  */
 
-/**
- * Implements hook_enable().
- */
-function nodeaccess_enable() {
-}
-
-/**
- * Implements hook_disable().
- */
-function nodeaccess_disable() {
-  nodeaccess_disabling(TRUE);
-}
+use Drupal\node\Entity\NodeType;
 
 /**
  * Implements hook_install().
@@ -24,143 +13,94 @@ function nodeaccess_disable() {
 function nodeaccess_install() {
   // Set up default permissions to be view for authenticated and
   // anonymous users, and all permissions for author.
-  $grants = array();
-  $role_perms = user_role_permissions(array(1 => 1, 2 => 2));
-  $role_perms[1]['access content'] = isset($role_perms[1]['access content'])?
-                                      intval($role_perms[1]['access content']) : 0;
-  $role_perms[2]['access content'] = isset($role_perms[2]['access content'])?
-                                      intval($role_perms[2]['access content']) : 0;
-  // Anonymous user setting.
-  $grants[] = array(
-    'gid' => 1,
-    'realm' => 'nodeaccess_rid',
-    'grant_view' => $role_perms[1]['access content'],
-  );
-  // Authenticated user setting.
-  $grants[] = array(
-    'gid' => 2,
-    'realm' => 'nodeaccess_rid',
-    'grant_view' => $role_perms[2]['access content'],
-  );
-  $author_prefs = array();
-  foreach (node_type_get_types() as $type => $name) {
+  $grants = [];
+  $role_perms = user_role_permissions(['anonymous', 'authenticated']);
+  $grants['anonymous']['grant_view'] = (int) in_array('access content', $role_perms['anonymous']); 
+  $grants['authenticated']['grant_view'] = (int) in_array('access content', $role_perms['authenticated']);
+  
+  $author_prefs = $role_alias = [];
+  $settings = \Drupal::configFactory()->getEditable('nodeaccess.settings');
+  foreach (NodeType::loadMultiple() as $type => $bundle) {
     // We check the edit permissions for anonymous and authenticated users.
     $edit_perm = 'edit any ' . $type . ' content';
-    $role_perms[1][$edit_perm] = isset($role_perms[1][$edit_perm])?
-                                      intval($role_perms[1][$edit_perm]) : 0;
-    $role_perms[2][$edit_perm] = isset($role_perms[2][$edit_perm])?
-                                      intval($role_perms[2][$edit_perm]) : 0;
-    $grants[0]['grant_update'] = $role_perms[1][$edit_perm];
-    $grants[1]['grant_update'] = $role_perms[2][$edit_perm];
+    $grants['anonymous']['grant_update'] = (int) in_array($edit_perm, $role_perms['anonymous']);
+    $grants['authenticated']['grant_update'] = (int) in_array($edit_perm, $role_perms['authenticated']);
+
     // We check the delete permissions for anonymous and authenticated users.
     $delete_perm = 'delete any ' . $type . ' content';
-    $role_perms[1][$delete_perm] = isset($role_perms[1][$delete_perm])?
-                                      intval($role_perms[1][$delete_perm]) : 0;
-    $role_perms[2][$delete_perm] = isset($role_perms[2][$delete_perm])?
-                                      intval($role_perms[2][$delete_perm]) : 0;
-    $grants[0]['grant_delete'] = $role_perms[1][$delete_perm];
-    $grants[1]['grant_delete'] = $role_perms[2][$delete_perm];
-    variable_set('nodeaccess_' . $type, $grants);
-    $author_prefs[$type] = array(
+    $grants['anonymous']['grant_delete'] = (int) in_array($delete_perm, $role_perms['anonymous']);
+    $grants['authenticated']['grant_delete'] = (int) in_array($delete_perm, $role_perms['authenticated']);
+    
+    // Author Permissions.
+    $grants['author'] = [
       'grant_view' => 0,
       'grant_update' => 0,
       'grant_delete' => 0,
-    );
+    ];
+    $settings->set($type, $grants);
   }
-  variable_set('nodeaccess_authors', $author_prefs);
-  // Set up all permissions to be editable by default.
-  $grant_prefs = array('view' => 1, 'edit' => 1, 'delete' => 1);
-  variable_set('nodeaccess-grants', $grant_prefs);
+  $i = 1;
+  foreach (user_roles() as $id => $role) {
+    $role_alias[$id] = [
+      'alias' => $role->label(),
+      'name' => $role->label(),
+      'weight' => 0,
+      'allow' => 0,
+    ];
+    $role_map[$id] = $i;
+    $i++;
+  }
+  $settings->set('role_alias', $role_alias);
+  $settings->set('role_map', $role_map);
+  $settings->save();
 }
-
 /**
  * Implements hook_schema().
  */
 function nodeaccess_schema() {
-  $schema['nodeaccess'] = array(
-    'fields' => array(
-      'nid' => array(
+  $schema['nodeaccess'] = [
+    'fields' => [
+      'nid' => [
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-      ),
-      'gid' => array(
+      ],
+      'gid' => [
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-      ),
-      'realm' => array(
+      ],
+      'realm' => [
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-      ),
-      'grant_view'  => array(
+      ],
+      'grant_view'  => [
         'type' => 'int',
         'size' => 'tiny',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-      ),
-      'grant_update' => array(
+      ],
+      'grant_update' => [
         'type' => 'int',
         'size' => 'tiny',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-      ),
-      'grant_delete' => array(
+      ],
+      'grant_delete' => [
         'type' => 'int',
         'size' => 'tiny',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-      ),
-    ),
-    'primary key' => array('nid', 'gid', 'realm'),
-  );
-  $schema['nodeaccess_role_alias'] = array(
-    'fields' => array(
-      'rid' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'name' => array(
-        'type' => 'varchar',
-        'length' => 50,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'weight' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-    ),
-    'primary key' => array('rid'),
-  );
+      ],
+    ],
+    'primary key' => ['nid', 'gid', 'realm'],
+  ];
   return $schema;
-}
-
-/**
- * Implements hook_uninstall().
- */
-function nodeaccess_uninstall() {
-  // Remove variables.
-  variable_del('nodeaccess-priority');
-  variable_del('nodeaccess-preserve');
-  variable_del('nodeaccess-grants');
-  variable_del('nodeaccess-roles');
-  variable_del('nodeaccess-types');
-  variable_del('nodeaccess_authors');
-  foreach (node_type_get_types() as $type => $name) {
-    variable_del('nodeaccess_' . $type);
-    variable_del('nodeaccess_' . $type . '_userreference');
-  }
-  // Remove tables.
-  drupal_uninstall_schema('nodeaccess');
 }
