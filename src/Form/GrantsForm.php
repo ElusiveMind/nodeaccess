@@ -17,7 +17,7 @@ class GrantsForm extends FormBase {
   public function getFormId() {
     return 'nodeaccess_grants_form';
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -42,10 +42,10 @@ class GrantsForm extends FormBase {
         $rid = $role_map[$id];
         $result = db_query("SELECT na.grant_view, na.grant_update, na.grant_delete
         FROM {node_access} na where na.gid = :rid AND na.realm = :realm AND na.nid = :nid", [
-        ':rid' => $rid,
-        ':realm' => 'nodeaccess_rid',
-        ':nid' => $nid]
-        )->fetchAssoc();
+          ':rid' => $rid,
+          ':realm' => 'nodeaccess_rid',
+          ':nid' => $nid
+        ])->fetchAssoc();
         if (!empty($result)) {
           $form_values['rid'][$rid] = [
             'name' => $role['alias'],

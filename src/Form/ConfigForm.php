@@ -37,7 +37,7 @@ class ConfigForm extends ConfigFormBase {
     $role_header = [
       $this->t('Allow Role'),
       $this->t('Alias'),
-      $this->t('Weight')
+      $this->t('Weight'),
     ];
     $header = [
       $this->t('ROLE'),

@@ -7,11 +7,11 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\node\Entity\Node;
 
-/**
- * A custom access check.
- */
 class NodeGrantAccessCheck implements AccessInterface {
 
+  /**
+   * A custom access check.
+   */
   public function access($node, AccountInterface $account) {
     if (!$node) {
       return AccessResult::forbidden();
@@ -25,7 +25,7 @@ class NodeGrantAccessCheck implements AccessInterface {
         ($account->hasPermission('grant node permissions') || $account->hasPermission('administer nodeaccess'))) {
       return AccessResult::Allowed();
     }
-  	return AccessResult::forbidden();
+    return AccessResult::forbidden();
   }
 
 }
