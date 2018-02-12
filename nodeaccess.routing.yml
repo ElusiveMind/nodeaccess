@@ -15,4 +15,3 @@ entity.node.grants:
     node: \d+
   options:
     _admin_route: TRUE
-    

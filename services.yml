@@ -3,4 +3,3 @@ services:
       class: Drupal\nodeaccess\AccessChecks\NodeGrantAccessCheck
       tags:
         - { name: access_check }
-        

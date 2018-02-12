@@ -3,4 +3,3 @@ nodeaccess.configuration:
   description: 'Nodeaccess Settings'
   parent: user.admin_index
   route_name: nodeaccess.administration
-  
