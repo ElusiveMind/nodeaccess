@@ -15,22 +15,20 @@ function nodeaccess_install() {
   // anonymous users, and all permissions for author.
   $grants = [];
   $role_perms = user_role_permissions(['anonymous', 'authenticated']);
-  $grants['anonymous']['grant_view'] = (int) in_array('access content', $role_perms['anonymous']); 
+  $grants['anonymous']['grant_view'] = (int) in_array('access content', $role_perms['anonymous']);
   $grants['authenticated']['grant_view'] = (int) in_array('access content', $role_perms['authenticated']);
-  
   $role_alias = [];
   $settings = \Drupal::configFactory()->getEditable('nodeaccess.settings');
+
   foreach (NodeType::loadMultiple() as $type => $bundle) {
     // We check the edit permissions for anonymous and authenticated users.
     $edit_perm = 'edit any ' . $type . ' content';
     $grants['anonymous']['grant_update'] = (int) in_array($edit_perm, $role_perms['anonymous']);
     $grants['authenticated']['grant_update'] = (int) in_array($edit_perm, $role_perms['authenticated']);
-
     // We check the delete permissions for anonymous and authenticated users.
     $delete_perm = 'delete any ' . $type . ' content';
     $grants['anonymous']['grant_delete'] = (int) in_array($delete_perm, $role_perms['anonymous']);
     $grants['authenticated']['grant_delete'] = (int) in_array($delete_perm, $role_perms['authenticated']);
-    
     // Author Permissions.
     $grants['author'] = [
       'grant_view' => 0,
@@ -54,6 +52,7 @@ function nodeaccess_install() {
   $settings->set('role_map', $role_map);
   $settings->save();
 }
+
 /**
  * Implements hook_schema().
  */

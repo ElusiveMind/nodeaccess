@@ -17,6 +17,7 @@ class GrantsForm extends FormBase {
   public function getFormId() {
     return 'nodeaccess_grants_form';
   }
+  
   /**
    * {@inheritdoc}
    */
@@ -40,7 +41,11 @@ class GrantsForm extends FormBase {
       foreach ($role_alias as $id => $role) {
         $rid = $role_map[$id];
         $result = db_query("SELECT na.grant_view, na.grant_update, na.grant_delete
-        FROM {node_access} na where na.gid = :rid AND na.realm = :realm AND na.nid = :nid", [':rid' => $rid, ':realm' => 'nodeaccess_rid', ':nid' => $nid])->fetchAssoc();
+        FROM {node_access} na where na.gid = :rid AND na.realm = :realm AND na.nid = :nid", [
+        ':rid' => $rid,
+        ':realm' => 'nodeaccess_rid',
+        ':nid' => $nid]
+        )->fetchAssoc();
         if (!empty($result)) {
           $form_values['rid'][$rid] = [
             'name' => $role['alias'],
@@ -50,7 +55,7 @@ class GrantsForm extends FormBase {
           ];
         }
         else {
-           $form_values['rid'][$rid] = [
+          $form_values['rid'][$rid] = [
             'name' => $role['alias'],
             'grant_view' => FALSE,
             'grant_update' => FALSE,
@@ -180,7 +185,7 @@ class GrantsForm extends FormBase {
       $form['keys'] = [
         '#type' => 'entity_autocomplete',
         '#default_value' => isset($form_values['keys']) ? $form_values['keys'] : '',
-        '#size' => 40,        
+        '#size' => 40,
         '#target_type' => 'user',
         '#title' => $this->t('Enter names to search for users'),
       ];
@@ -188,7 +193,7 @@ class GrantsForm extends FormBase {
     else {
       $form['keys'] = [
         '#type' => 'textfield',
-        '#default_value' => isset($form_values['keys'])? $form_values['keys'] : '',
+        '#default_value' => isset($form_values['keys']) ? $form_values['keys'] : '',
         '#size' => 40,
       ];
     }
@@ -196,10 +201,10 @@ class GrantsForm extends FormBase {
     $form['search'] = [
       '#type' => 'submit',
       '#value' => $this->t('Search'),
-      '#submit' =>  ['::searchUser'],
+      '#submit' => ['::searchUser'],
       '#suffix' => '</div></p>',
     ];
-    // users table
+    // Users table.
     if (count($users)) {
       $header = [];
       $header[] = $this->t('User');
@@ -245,7 +250,7 @@ class GrantsForm extends FormBase {
     ];
     return $form;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -296,14 +301,14 @@ class GrantsForm extends FormBase {
     foreach ($grants as $grant) {
       $id = db_insert('nodeaccess')
         ->fields([
-            'nid' => $nid,
-            'gid' => $grant['gid'],
-            'realm' => $grant['realm'],
-            'grant_view' => $grant['grant_view'],
-            'grant_update' => $grant['grant_update'],
-            'grant_delete' => $grant['grant_delete'],
-          ])
-          ->execute();
+          'nid' => $nid,
+          'gid' => $grant['gid'],
+          'realm' => $grant['realm'],
+          'grant_view' => $grant['grant_view'],
+          'grant_update' => $grant['grant_update'],
+          'grant_delete' => $grant['grant_delete'],
+        ])
+        ->execute();
     }
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->writeGrants($node);
     drupal_set_message($this->t('Grants saved.'));

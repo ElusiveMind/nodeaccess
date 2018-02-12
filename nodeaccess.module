@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Control access to site content based on the users and roles.
@@ -17,23 +18,23 @@ use Drupal\node\NodeInterface;
  */
 function nodeaccess_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
-  	case 'entity.node.grants':
+    case 'entity.node.grants':
       return t("You can set grants for individual users. Enter a name or a partial name in the box and click Search or press return. You must check the 'Keep?' checkbox if you want to keep the user for granting. Note that user grants are in addition to those coming from roles.");
-      break;
   }
 }
+
 /**
  * Implements hook_node_access_records().
  */
 function nodeaccess_node_access_records($node) {
-	$settings = \Drupal::configFactory()->get('nodeaccess.settings');
-	$ntype = $node->getType();
+  $settings = \Drupal::configFactory()->get('nodeaccess.settings');
+  $ntype = $node->getType();
   // Need to find out if node has own grants or whether to use defaults.
   $default = $settings->get($ntype);
   $roles_gids = $settings->get('role_map');
   $nid = $node->id();
   $grants = [];
-    
+
   // Setup default keys that are required by node_access_write_grants().
   $grant_defaults = [
     'gid' => 0,
@@ -48,15 +49,15 @@ function nodeaccess_node_access_records($node) {
   if ($result < 1) {
     // Node has no own grants, use defaults if published.
     if ($node->isPublished()) {
-    	$i = 0;
-    	foreach ($default as $key => $val) {
-    		if ($key != 'author') {
-	    		$rid = $roles_gids[$key];
-	    		$grants[$i] = $default[$key];
-	    		$grants[$i]['gid'] = $rid;
-	    		$i++;
-	    	}
-    	}
+      $i = 0;
+      foreach ($default as $key => $val) {
+        if ($key != 'author') {
+          $rid = $roles_gids[$key];
+          $grants[$i] = $default[$key];
+          $grants[$i]['gid'] = $rid;
+          $i++;
+        }
+      }
     }
     else {
       // Otherwise, check access to unpublished content for authenticated and
@@ -102,18 +103,19 @@ function nodeaccess_node_access_records($node) {
   }
   return $updated_grants;
 }
+
 /**
  * Implements hook_node_grants().
  */
 function nodeaccess_node_grants(AccountInterface $account, $op) {
-	$config = \Drupal::configFactory()->get('nodeaccess.settings');
-	$role_map = $config->get('role_map');
-	$roles = $account->getRoles();
-	$rids = [];
+  $config = \Drupal::configFactory()->get('nodeaccess.settings');
+  $role_map = $config->get('role_map');
+  $roles = $account->getRoles();
+  $rids = [];
 
-	foreach ($roles as $role) {
-		$rids[] = $role_map[$role];
-	}
+  foreach ($roles as $role) {
+    $rids[] = $role_map[$role];
+  }
   return [
     'nodeaccess_rid' => $rids,
     'nodeaccess_uid' => [$account->id()],
@@ -134,6 +136,7 @@ function nodeaccess_entity_insert(EntityInterface $entity) {
     $config->save();
   }
 }
+
 /**
  * Implements hook_entity_delete().
  */
@@ -153,21 +156,23 @@ function nodeaccess_entity_delete(EntityInterface $entity) {
 function nodeaccess_node_delete(EntityInterface $node) {
   // Deleting node, delete related permissions.
   \Drupal::database()->delete('nodeaccess')
-  ->condition('nid', $node->id())
-  ->execute();
+    ->condition('nid', $node->id())
+    ->execute();
 }
+
 /**
  * Implements hook_ENTITY_TYPE_delete().
  */
 function nodeaccess_node_type_delete(NodeTypeInterface $type) {
-	$config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
-	$config->clear($type->id())->save();
+  $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
+  $config->clear($type->id())->save();
 }
+
 /**
  * Implements hook_ENTITY_TYPE_insert().
  */
 function nodeaccess_node_type_insert(NodeTypeInterface $type) {
-	$config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
+  $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
 
   // New node type, default to whatever is set for access content permission.
   $role_perms = user_role_permissions([DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID]);
@@ -191,12 +196,13 @@ function nodeaccess_node_type_insert(NodeTypeInterface $type) {
   $config->set($type->id(), $grants)->save();
   node_access_needs_rebuild(TRUE);
 }
+
 /**
  * Implements hook_node_access().
  */
 function nodeaccess_node_access(NodeInterface $node, $op, $account) {
-	$settings = \Drupal::configFactory()->get('nodeaccess.settings');
-	$role_map = $settings->get('role_map');
+  $settings = \Drupal::configFactory()->get('nodeaccess.settings');
+  $role_map = $settings->get('role_map');
   switch ($op) {
     case 'update':
     case 'delete':
@@ -216,7 +222,7 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
     case 'view':
       // If the node is not published. We check other permissions.
       if (!$node->isPublished()) {
-      	if ($account->hasPermission('bypass node access')) {
+        if ($account->hasPermission('bypass node access')) {
           return AccessResult::Allowed();
         }
         // If the current user is the author and not anonymous.
@@ -225,12 +231,13 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
           if ($account->hasPermission('view own unpublished content')) {
             return AccessResult::Allowed();
           }
-        }   
+        }
         return AccessResult::forbidden();
       }
       break;
   }
 }
+
 /**
  * Return the grants applied to a node object used for Grant form.
  *

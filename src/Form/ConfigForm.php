@@ -18,12 +18,14 @@ class ConfigForm extends ConfigFormBase {
   public function getEditableConfigNames() {
     return ['nodeaccess.settings'];
   }
+  
   /**
    * {@inheritdoc}
    */
   public function getFormId() {
     return 'nodeaccess_admin_settings';
   }
+
   /**
    * {@inheritdoc}
    */
@@ -32,8 +34,17 @@ class ConfigForm extends ConfigFormBase {
     $role_alias = $settings->get('role_alias');
     $allowed_grants = $settings->get('grants');
     $allowed_types = $settings->get('allowed_types');
-    $role_header = [$this->t('Allow Role'), $this->t('Alias'), $this->t('Weight')];
-    $header = [$this->t('ROLE'), $this->t('VIEW'), $this->t('EDIT'), $this->t('DELETE')];
+    $role_header = [
+      $this->t('Allow Role'),
+      $this->t('Alias'),
+      $this->t('Weight')
+    ];
+    $header = [
+      $this->t('ROLE'),
+      $this->t('VIEW'),
+      $this->t('EDIT'),
+      $this->t('DELETE'),
+    ];
     $node_types = NodeType::loadMultiple();
     $roles = user_roles();
 
@@ -125,10 +136,11 @@ class ConfigForm extends ConfigFormBase {
     // Generate fieldsets for each node type.
     foreach ($node_types as $type => $bundle) {
       $user_perms = $settings->get($type);
+      $label = $bundle->label();
       $form[$type] = [
         '#type' => 'details',
         '#open' => TRUE,
-        '#title' => $this->t($bundle->label()),
+        '#title' => $this->t($label),
         '#tree' => TRUE,
         '#description' => $this->t('The settings selected for the node author will define what permissions the node author has. This cannot be changed on individual node grants.'),
       ];
@@ -185,6 +197,7 @@ class ConfigForm extends ConfigFormBase {
     }
     return parent::buildForm($form, $form_state);
   }
+
   /**
    * {@inheritdoc}
    */
@@ -198,12 +211,12 @@ class ConfigForm extends ConfigFormBase {
       ->set('priority', $values['priority'])
       ->set('preserve', $values['preserve'])
       ->set('grants', $values['grants']);
-    foreach($node_types as $type => $bundle) {
+    foreach ($node_types as $type => $bundle) {
       $config = $values[$type]['user_permissions'];
       $allowed_types[$type] = $values[$type]['show'];
       $settings->set($type, $config);
     }
-    $settings->set('allowed_types', $allowed_types); 
+    $settings->set('allowed_types', $allowed_types);
     // Save allowed roles, role aliases and weights.
     $settings->set('role_alias', $values['role']['alias']);
     $settings->save();
