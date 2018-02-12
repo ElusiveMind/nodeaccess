@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * A custom access check.
+ */
+
 namespace Drupal\nodeaccess\AccessChecks;
 
 use Drupal\Core\Routing\Access\AccessInterface;
@@ -7,9 +11,6 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\node\Entity\Node;
 
-/**
- * A custom access check.
- */
 class NodeGrantAccessCheck implements AccessInterface {
 
   public function access($node, AccountInterface $account) {

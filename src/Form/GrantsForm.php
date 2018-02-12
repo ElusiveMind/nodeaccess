@@ -295,7 +295,7 @@ class GrantsForm extends FormBase {
       ->execute();
     foreach ($grants as $grant) {
       $id = db_insert('nodeaccess')
-          ->fields([
+        ->fields([
             'nid' => $nid,
             'gid' => $grant['gid'],
             'realm' => $grant['realm'],
@@ -303,11 +303,12 @@ class GrantsForm extends FormBase {
             'grant_update' => $grant['grant_update'],
             'grant_delete' => $grant['grant_delete'],
           ])
-      ->execute();
+          ->execute();
     }
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->writeGrants($node);
     drupal_set_message($this->t('Grants saved.'));
   }
+
   public function searchUser(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     $form_state->setRebuild();

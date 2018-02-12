@@ -94,7 +94,6 @@ function nodeaccess_node_access_records($node) {
   $grant['realm'] = 'nodeaccess_author';
   // Include author grant even with all values FALSE, it may be
   // needed to overwrite an older value.
-
   $grants[] = $grant;
   $updated_grants = [];
   foreach ($grants as $id => $grant) {
@@ -120,16 +119,6 @@ function nodeaccess_node_grants(AccountInterface $account, $op) {
     'nodeaccess_uid' => [$account->id()],
     'nodeaccess_author' => [$account->id()],
   ];
-}
-
-/**
- * Helper function for providing numeric id for role
- */
-function node_access_get_role_gid($role) {
-  $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
-  $roles_gids = $config->get('role_map');
-
-  return $roles_gids[$role];
 }
 
 /**

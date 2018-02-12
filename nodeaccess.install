@@ -18,7 +18,7 @@ function nodeaccess_install() {
   $grants['anonymous']['grant_view'] = (int) in_array('access content', $role_perms['anonymous']); 
   $grants['authenticated']['grant_view'] = (int) in_array('access content', $role_perms['authenticated']);
   
-  $author_prefs = $role_alias = [];
+  $role_alias = [];
   $settings = \Drupal::configFactory()->getEditable('nodeaccess.settings');
   foreach (NodeType::loadMultiple() as $type => $bundle) {
     // We check the edit permissions for anonymous and authenticated users.
