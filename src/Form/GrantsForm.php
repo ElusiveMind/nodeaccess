@@ -325,6 +325,7 @@ class GrantsForm extends FormBase {
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->writeGrants($node);
     drupal_set_message($this->t('Grants saved.'));
   }
+  
   /**
    * Helper function to search usernames.
    */

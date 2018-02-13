@@ -136,11 +136,10 @@ class ConfigForm extends ConfigFormBase {
     // Generate fieldsets for each node type.
     foreach ($node_types as $type => $bundle) {
       $user_perms = $settings->get($type);
-      $label = $bundle->label();
       $form[$type] = [
         '#type' => 'details',
         '#open' => FALSE,
-        '#title' => $this->t($label),
+        '#title' => $bundle->label(),
         '#tree' => TRUE,
         '#description' => $this->t('The settings selected for the node author will define what permissions the node author has. This cannot be changed on individual node grants.'),
       ];
