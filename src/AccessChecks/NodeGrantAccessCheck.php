@@ -7,6 +7,9 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\node\Entity\Node;
 
+/**
+ * A custom access check for grants form.
+ */
 class NodeGrantAccessCheck implements AccessInterface {
 
   /**

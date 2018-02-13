@@ -44,7 +44,7 @@ class GrantsForm extends FormBase {
         FROM {node_access} na where na.gid = :rid AND na.realm = :realm AND na.nid = :nid", [
           ':rid' => $rid,
           ':realm' => 'nodeaccess_rid',
-          ':nid' => $nid
+          ':nid' => $nid,
         ])->fetchAssoc();
         if (!empty($result)) {
           $form_values['rid'][$rid] = [
@@ -165,18 +165,24 @@ class GrantsForm extends FormBase {
         $form['rid'][$rid]['name'] = [
           '#markup' => $role_alias[$id]['alias'],
         ];
-        $form['rid'][$rid]['grant_view'] = [
-          '#type' => 'checkbox',
-          '#default_value' => $roles[$rid]['grant_view'],
-        ];
-        $form['rid'][$rid]['grant_update'] = [
-          '#type' => 'checkbox',
-          '#default_value' => $roles[$rid]['grant_update'],
-        ];
-        $form['rid'][$rid]['grant_delete'] = [
-          '#type' => 'checkbox',
-          '#default_value' => $roles[$rid]['grant_delete'],
-        ];
+        if ($allowed_grants['view']) {
+          $form['rid'][$rid]['grant_view'] = [
+            '#type' => 'checkbox',
+            '#default_value' => $roles[$rid]['grant_view'],
+          ];
+        }
+        if ($allowed_grants['edit']) {
+          $form['rid'][$rid]['grant_update'] = [
+            '#type' => 'checkbox',
+            '#default_value' => $roles[$rid]['grant_update'],
+          ];
+        }
+        if ($allowed_grants['delete']) {
+          $form['rid'][$rid]['grant_delete'] = [
+            '#type' => 'checkbox',
+            '#default_value' => $roles[$rid]['grant_delete'],
+          ];
+        }
       }
     }
 
@@ -230,18 +236,24 @@ class GrantsForm extends FormBase {
           '#type' => 'checkbox',
           '#default_value' => $account['keep'],
         ];
-        $form['uid'][$uid]['grant_view'] = [
-          '#type' => 'checkbox',
-          '#default_value' => $account['grant_view'],
-        ];
-        $form['uid'][$uid]['grant_update'] = [
-          '#type' => 'checkbox',
-          '#default_value' => $account['grant_update'],
-        ];
-        $form['uid'][$uid]['grant_delete'] = [
-          '#type' => 'checkbox',
-          '#default_value' => $account['grant_delete'],
-        ];
+        if ($allowed_grants['view']) {
+          $form['uid'][$uid]['grant_view'] = [
+            '#type' => 'checkbox',
+            '#default_value' => $account['grant_view'],
+          ];
+        }
+        if ($allowed_grants['edit']) {
+          $form['uid'][$uid]['grant_update'] = [
+            '#type' => 'checkbox',
+            '#default_value' => $account['grant_update'],
+          ];
+        }
+        if ($allowed_grants['delete']) {
+          $form['uid'][$uid]['grant_delete'] = [
+            '#type' => 'checkbox',
+            '#default_value' => $account['grant_delete'],
+          ];
+        }
       }
     }
     $form['submit'] = [
@@ -263,7 +275,7 @@ class GrantsForm extends FormBase {
           unset($uids[$uid]);
         }
       }
-      $form_state->set('uid', $uids);
+      $form_state->setValue('uid', $uids);
     }
   }
 
@@ -313,7 +325,9 @@ class GrantsForm extends FormBase {
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->writeGrants($node);
     drupal_set_message($this->t('Grants saved.'));
   }
-
+  /**
+   * Helper function to search usernames.
+   */
   public function searchUser(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     $form_state->setRebuild();

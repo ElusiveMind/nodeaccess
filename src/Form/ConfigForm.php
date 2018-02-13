@@ -18,7 +18,7 @@ class ConfigForm extends ConfigFormBase {
   public function getEditableConfigNames() {
     return ['nodeaccess.settings'];
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -91,7 +91,7 @@ class ConfigForm extends ConfigFormBase {
     // view and edit, and the aliases and weights of those roles.
     $form['role'] = [
       '#type' => 'details',
-      '#open' => TRUE,
+      '#open' => FALSE,
       '#title' => $this->t('Allowed Roles'),
       '#tree' => TRUE,
       '#description' => $this->t('The selected roles will be listed on individual node grants. If you wish for certain roles to be hidden from users on the node grants tab, make sure they are not selected here. You may also provide an alias for each role to be displayed to the user and a weight to order them by. This is useful if your roles have machine-readable names not intended for human users.'),
@@ -139,7 +139,7 @@ class ConfigForm extends ConfigFormBase {
       $label = $bundle->label();
       $form[$type] = [
         '#type' => 'details',
-        '#open' => TRUE,
+        '#open' => FALSE,
         '#title' => $this->t($label),
         '#tree' => TRUE,
         '#description' => $this->t('The settings selected for the node author will define what permissions the node author has. This cannot be changed on individual node grants.'),
