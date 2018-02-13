@@ -1,4 +1,5 @@
-Node Access Module
+INTRODUCTION
+------------
 
 This module allows you to manage permissions for nodes by role and user. In 
 other words, it implements per node access control for users and groups. With 
@@ -13,15 +14,20 @@ node pages. You can click this and assign permissions for that node.
   * To submit bug reports and feature suggestions, or to track changes:
    https://www.drupal.org/project/issues/nodeaccess
 
-INSTALLATION:
+REQUIREMENTS
+------------
+
+INSTALLATION
+------------
 
   * Install as you would normally install a contributed Drupal module. Visit:
    https://www.drupal.org/docs/8/extending-drupal-8/installing-drupal-8-modules
    for further information.
 
- * Strongly recommend backing up your database before installing this module.
+  * Strongly recommend backing up your database before installing this module.
 
-IMPORTANT!
+CONFIGURATION
+-------------
 
 Once you check the enable box and submit the page, no nodes will be accessible
 to anyone other than the admin user. You just set permissions on the
