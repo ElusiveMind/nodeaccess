@@ -165,7 +165,11 @@ function nodeaccess_node_delete(EntityInterface $node) {
  */
 function nodeaccess_node_type_delete(NodeTypeInterface $type) {
   $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
-  $config->clear($type->id())->save();
+  $allowed_types = $config->get('allowed_types');
+  unset($allowed_types[$type->id()]);
+  $config->clear($type->id())
+    ->set('allowed_types', $allowed_types)
+    ->save();
 }
 
 /**
@@ -193,7 +197,11 @@ function nodeaccess_node_type_insert(NodeTypeInterface $type) {
     'grant_update' => 0,
     'grant_delete' => 0,
   ];
-  $config->set($type->id(), $grants)->save();
+  $allowed_types = $config->get('allowed_types');
+  $allowed_types[$type->id()] = 0;
+  $config->set($type->id(), $grants)
+    ->set('allowed_types', $allowed_types)
+    ->save();
   node_access_needs_rebuild(TRUE);
 }
 
