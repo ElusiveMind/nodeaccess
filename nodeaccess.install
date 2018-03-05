@@ -73,7 +73,7 @@ function nodeaccess_schema() {
       ],
       'realm' => [
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 191,
         'not null' => TRUE,
         'default' => '',
       ],
