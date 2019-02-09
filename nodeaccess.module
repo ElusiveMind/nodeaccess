@@ -45,8 +45,15 @@ function nodeaccess_node_access_records($node) {
     'priority' => $settings->get('priority'),
   ];
 
-  $result = db_query("SELECT count(*) FROM {nodeaccess} WHERE nid = :nid", [':nid' => $nid])->fetchField();
-  if ($result < 1) {
+  $db = \Drupal::database();
+  $entries = $db->select('nodeaccess', 'n')
+    ->fields('n')
+    ->condition('nid', $nid, '=')
+    ->execute()
+    ->fetchAll();
+  $node_count = count($entries);
+
+  if ($node_count < 1) {
     // Node has no own grants, use defaults if published.
     if ($node->isPublished()) {
       $i = 0;
@@ -77,9 +84,15 @@ function nodeaccess_node_access_records($node) {
   }
   else {
     // Node has own grants, use them.
-    $result = db_query("SELECT nid, gid, realm, grant_view, grant_update, grant_delete FROM {nodeaccess} WHERE nid = :nid", [':nid' => $nid]);
+    $db = \Drupal::database();
+    $entries = $db->select('nodeaccess', 'n')
+      ->fields('n')
+      ->condition('nid', $nid, '=')
+      ->execute()
+      ->fetchAll();
+
     $grants = [];
-    foreach ($result as $row) {
+    foreach ($entries as $row) {
       $grants[] = [
         'gid' => $row->gid,
         'realm' => $row->realm,
@@ -214,7 +227,6 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
   switch ($op) {
     case 'update':
     case 'delete':
-
       // If the node belongs to a deleted user.
       if ($account->id() == 0 && $node->getOwnerId() == 0) {
         // We check if the role has particular access to this node.
@@ -224,21 +236,6 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
         if (($grants['rid'][$anonymous_rid]['grant_update'] && $op == 'update') ||
             ($grants['rid'][$anonymous_rid]['grant_delete'] && $op == 'delete')) {
           return AccessResult::Allowed();
-        }
-        return AccessResult::forbidden();
-      }
-    case 'view':
-      // If the node is not published. We check other permissions.
-      if (!$node->isPublished()) {
-        if ($account->hasPermission('bypass node access')) {
-          return AccessResult::Allowed();
-        }
-        // If the current user is the author and not anonymous.
-        elseif ($node->getOwnerId() == $account->id() && $account->id() > 0) {
-          // We check to see if they have access to view own unpublished.
-          if ($account->hasPermission('view own unpublished content')) {
-            return AccessResult::Allowed();
-          }
         }
         return AccessResult::forbidden();
       }
@@ -255,11 +252,13 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
 function _nodeaccess_get_grants($node) {
   $grants = [];
   // Load all roles.
-  $result = db_query("SELECT na.gid, na.grant_view, na.grant_update, na.grant_delete FROM {node_access} na WHERE na.realm = :realm AND na.nid = :nid",
-    [
-      ':realm' => 'nodeaccess_rid',
-      ':nid' => $node->id(),
-    ]);
+  $db = \Drupal::database();
+  $result = $db->select('nodeaccess', 'na')
+    ->fields('na', ['na.gid', 'na.grant_view, na.grant_update, na.grant_delete'])
+    ->condition('nid', $node->id, '=')
+    ->condition('realm', 'nodeaccess_rid', '=')
+    ->execute()
+    ->fetchAll();
   foreach ($result as $grant) {
     $grants['rid'][$grant->gid] = [
       'grant_view' => $grant->grant_view,
@@ -268,11 +267,17 @@ function _nodeaccess_get_grants($node) {
     ];
   }
   // Load users from node_access.
-  $result = db_query("SELECT uid, name, grant_view, grant_update, grant_delete FROM {node_access} LEFT JOIN {users_field_data} ON uid = gid WHERE nid = :nid AND realm = :realm ORDER BY name",
-    [
-      ':nid' => $node->id(),
-      ':realm' => 'nodeaccess_uid',
-    ]);
+  $db = \Drupal::database();
+  $entries = $db->select('nodeaccess', 'n')
+    ->fields('n', ['grant_view', 'grant_update', 'grant_delete'])
+    ->join('users_field_data', 'ufd', 'ufd.uid = n.gid')
+    ->condition('nid', $node->nid, '=')
+    ->condition('realm', 'nodeaccess_uid', '=')
+    ->orderBy('ufd.name', 'ASC')
+    ->execute()
+    ->fetchAll();
+  $result = count($entries);
+
   foreach ($result as $account) {
     $grants['uid'][$account->uid] = [
       'name' => $account->name,

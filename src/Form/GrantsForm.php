@@ -2,6 +2,7 @@
 
 namespace Drupal\nodeaccess\Form;
 
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\node\Entity\Node;
@@ -104,23 +105,41 @@ class GrantsForm extends FormBase {
         }
       }
       // Calculate default grants for found users.
+      $db = \Drupal::database();
       if (isset($form_values['uid']) && is_array($form_values['uid'])) {
         foreach (array_keys($form_values['uid']) as $uid) {
           if (!$form_values['uid'][$uid]['keep']) {
             foreach (['grant_view', 'grant_update', 'grant_delete'] as $grant_type) {
-              $form_values['uid'][$uid][$grant_type] = db_query_range("SELECT count(*) FROM {node_access} na  LEFT JOIN {user__roles} r ON na.gid = r.roles_target_id WHERE nid = :nid AND realm = :realm AND entity_id = :uid AND $grant_type = 1",
-                0, 1,
+              $form_values['uid'][$uid][$grant_type] = $db->queryRange('
+                SELECT count(*) FROM {node_access} na
+                LEFT JOIN {user__roles} r ON (na.gid = CAST(r.roles_target_id as int))
+                WHERE na.nid = :nid
+                  AND na.realm = :realm
+                  AND r.entity_id = :uid
+                  AND :grant_type = :one',
+                0,
+                1,
                 [
                   ':nid' => $nid,
                   ':realm' => 'nodeaccess_rid',
                   ':uid' => $uid,
+                  ':grant_type' => $grant_type,
+                  ':one' => 1,
                 ])->fetchField() ||
-                db_query_range("SELECT count(*) FROM {node_access} na WHERE nid = :nid AND realm = :realm AND gid = :gid AND $grant_type = 1",
-                  0, 1,
+                $db->queryRange('
+                  SELECT count(*) FROM {node_access}
+                  WHERE nid = :nid
+                    AND realm = :realm
+                    AND gid = :gid
+                    AND :grant_type = :one',
+                  0,
+                  1,
                   [
                     ':nid' => $nid,
                     ':realm' => 'nodeaccess_uid',
+                    ':grant_type' => $grant_type,
                     ':gid' => $uid,
+                    ':one' => 1,
                   ]
                   )->fetchField();
             }
@@ -324,6 +343,9 @@ class GrantsForm extends FormBase {
     }
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->writeGrants($node);
     drupal_set_message($this->t('Grants saved.'));
+
+    $tags = ['node:' . $node->id()];
+    Cache::invalidateTags($tags);
   }
 
   /**
