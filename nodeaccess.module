@@ -137,6 +137,32 @@ function nodeaccess_node_grants(AccountInterface $account, $op) {
 }
 
 /**
+ * Implements hook_entity_update().
+ */
+function nodeaccess_entity_update(EntityInterface $entity) {
+  $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
+
+  if ($entity instanceof RoleInterface) {
+    $role_alias = $config->get('role_alias');
+    if ($role_alias[$entity->id()]) {
+      $role_alias[$entity->id()]['alias'] = $entity->label();
+      $role_alias[$entity->id()]['name'] = $entity->label();
+    }
+    else {
+      $role_alias[$entity->id()] = [
+        'alias' => $entity->label(),
+        'name' => $entity->label(),
+        'weight' => 0,
+        'allow' => 0,
+      ];
+    }
+    $config->set('role_alias', $role_alias);
+    $config->save();
+  }
+}
+
+
+/**
  * Implements hook_entity_insert().
  */
 function nodeaccess_entity_insert(EntityInterface $entity) {
@@ -146,6 +172,14 @@ function nodeaccess_entity_insert(EntityInterface $entity) {
     $roles_gids = array_flip($config->get('role_map'));
     $roles_gids[] = $entity->id();
     $config->set('role_map', array_flip($roles_gids));
+    $role_alias = $config->get('role_alias');
+    $role_alias[$entity->id()] = [
+      'alias' => $entity->label(),
+      'name' => $entity->label(),
+      'weight' => 0,
+      'allow' => 0,
+    ];
+    $config->set('role_alias', $role_alias);
     $config->save();
   }
 }
@@ -159,7 +193,11 @@ function nodeaccess_entity_delete(EntityInterface $entity) {
   if ($entity instanceof RoleInterface) {
     $roles_gids = $config->get('role_map');
     unset($roles_gids[$entity->id()]);
-    $config->set('role_map', $roles_gids)->save();
+    $config->set('role_map', $roles_gids);
+    $role_alias = $config->get('role_alias');
+    unset($role_alias[$entity->id()]);
+    $config->set('role_alias', $role_alias);
+    $config->save();
   }
 }
 

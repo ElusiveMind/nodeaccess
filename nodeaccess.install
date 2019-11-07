@@ -103,3 +103,28 @@ function nodeaccess_schema() {
   ];
   return $schema;
 }
+
+/**
+ * Update nodeaccess allowed role settings.
+ */
+function nodeaccess_update_8101() {
+  $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
+  $role_alias = $config->get('role_alias');
+  foreach (user_roles() as $id => $role) {
+    if ($role_alias[$id]) {
+      $role_alias[$id]['alias'] = $role->label();
+      $role_alias[$id]['name'] = $role->label();
+    }
+    else {
+      $role_alias[$id] = [
+        'alias' => $role->label(),
+        'name' => $role->label(),
+        'weight' => 0,
+        'allow' => 0,
+      ];
+    }
+    $i++;
+  }
+  $config->set('role_alias', $role_alias);
+  $config->save();
+}
