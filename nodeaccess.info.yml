@@ -4,3 +4,6 @@ package: Access control
 configure: nodeaccess.administration
 type: module
 core: 8.x
+
+dependencies:
+  - drupal:node
