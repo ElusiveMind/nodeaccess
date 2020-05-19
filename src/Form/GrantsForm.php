@@ -107,12 +107,18 @@ class GrantsForm extends FormBase {
       // Calculate default grants for found users.
       $db = \Drupal::database();
       if (isset($form_values['uid']) && is_array($form_values['uid'])) {
+        if (strstr($db->version(), 'MariaDB') !== FALSE) {
+          $cast_type = 'int';
+        }
+        else {
+          $cast_type = 'unsigned';
+        }
         foreach (array_keys($form_values['uid']) as $uid) {
           if (!$form_values['uid'][$uid]['keep']) {
             foreach (['grant_view', 'grant_update', 'grant_delete'] as $grant_type) {
               $form_values['uid'][$uid][$grant_type] = $db->queryRange('
                 SELECT count(*) FROM {node_access} na
-                LEFT JOIN {user__roles} r ON (na.gid = CAST(r.roles_target_id as int))
+                LEFT JOIN {user__roles} r ON (na.gid = CAST(r.roles_target_id as ' . $cast_type . '))
                 WHERE na.nid = :nid
                   AND na.realm = :realm
                   AND r.entity_id = :uid

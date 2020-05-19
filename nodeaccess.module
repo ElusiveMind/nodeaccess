@@ -292,7 +292,7 @@ function _nodeaccess_get_grants($node) {
   // Load all roles.
   $db = \Drupal::database();
   $result = $db->select('nodeaccess', 'na')
-    ->fields('na', ['na.gid', 'na.grant_view, na.grant_update, na.grant_delete'])
+    ->fields('na', ['gid', 'grant_view', 'grant_update', 'grant_delete'])
     ->condition('nid', $node->id, '=')
     ->condition('realm', 'nodeaccess_rid', '=')
     ->execute()
@@ -306,9 +306,9 @@ function _nodeaccess_get_grants($node) {
   }
   // Load users from node_access.
   $db = \Drupal::database();
-  $entries = $db->select('nodeaccess', 'n')
-    ->fields('n', ['grant_view', 'grant_update', 'grant_delete'])
-    ->join('users_field_data', 'ufd', 'ufd.uid = n.gid')
+  $entries = $db->select('nodeaccess', 'n');
+  $entries->join('users_field_data', 'ufd', 'ufd.uid = n.gid');
+  $entries->fields('n', ['grant_view', 'grant_update', 'grant_delete'])
     ->condition('nid', $node->nid, '=')
     ->condition('realm', 'nodeaccess_uid', '=')
     ->orderBy('ufd.name', 'ASC')
