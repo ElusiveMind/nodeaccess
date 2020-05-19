@@ -309,13 +309,15 @@ function _nodeaccess_get_grants($node) {
   $entries = $db->select('nodeaccess', 'n');
   $entries->join('users_field_data', 'ufd', 'ufd.uid = n.gid');
   $entries->fields('n', ['grant_view', 'grant_update', 'grant_delete'])
-    ->condition('nid', $node->nid, '=')
-    ->condition('realm', 'nodeaccess_uid', '=')
-    ->orderBy('ufd.name', 'ASC')
-    ->execute()
-    ->fetchAll();
-  $result = count($entries);
+    ->condition('n.nid', $node->id, '=')
+    ->condition('n.realm', 'nodeaccess_uid', '=')
+    ->orderBy('ufd.name', 'ASC');
+  $result = $entries->execute();
 
+  $results = [];
+  while($data = $result->fetchObject()) {
+    $results[] = $data;
+  }
   foreach ($result as $account) {
     $grants['uid'][$account->uid] = [
       'name' => $account->name,
