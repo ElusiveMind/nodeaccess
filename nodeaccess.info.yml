@@ -4,7 +4,6 @@ package: Access control
 configure: nodeaccess.administration
 type: module
 core: 8.x
-
 core_version_requirement: ^8
 
 dependencies:
