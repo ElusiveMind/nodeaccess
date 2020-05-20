@@ -1,6 +1,0 @@
-name = Nodeaccess UUID
-description = Add UUID support to nodeaccess module.
-core = 7.x
-
-dependencies[] = nodeaccess
-dependencies[] = uuid
