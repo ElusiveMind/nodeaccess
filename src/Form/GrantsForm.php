@@ -107,10 +107,15 @@ class GrantsForm extends FormBase {
       // Calculate default grants for found users.
       $db = \Drupal::database();
       if (isset($form_values['uid']) && is_array($form_values['uid'])) {
+        // set the cast type depending on which database engine is being used.
         if (strstr($db->version(), 'MariaDB') !== FALSE) {
           $cast_type = 'int';
         }
+        elseif (strstr($db->clientVersion(), 'PostgreSQL') !== FALSE) {
+          $cast_type = 'integer';
+        }
         else {
+          // assume it's MySQL.
           $cast_type = 'unsigned';
         }
         foreach (array_keys($form_values['uid']) as $uid) {
