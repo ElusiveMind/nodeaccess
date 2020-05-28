@@ -42,7 +42,7 @@ class GrantsForm extends FormBase {
       // Load all roles.
       foreach ($role_alias as $id => $role) {
         $rid = $role_map[$id];
-        $query = $db->select('node_access', 'n')
+        $query = $db->select('nodeaccess', 'n')
           ->fields('n', ['grant_view', 'grant_update', 'grant_delete'])
           ->condition('n.gid', $rid, '=')
           ->condition('n.realm', 'nodeaccess_rid', '=')
@@ -67,8 +67,8 @@ class GrantsForm extends FormBase {
         }
       }
 
-      // Load users from node_access.
-      $query = $db->select('node_access', 'n');
+      // Load users from nodeaccess.
+      $query = $db->select('nodeaccess', 'n');
       $query->join('users_field_data', 'ufd', 'ufd.uid = n.gid');
       $query->fields('n', ['grant_view', 'grant_update', 'grant_delete', 'nid']);
       $query->fields('ufd', ['name']);
@@ -76,18 +76,19 @@ class GrantsForm extends FormBase {
       $query->condition('n.realm', 'nodeaccess_uid', '=');
       $query->orderBy('ufd.name', 'ASC');
       $results = $query->execute();
-      while ($acounts = $results->fetchAssoc()) {
-        $form_values['uid'][$account->uid] = [
-          'name' => $account->name,
+      while ($account = $results->fetchAssoc()) {
+        $form_values['uid'][$account['uid']] = [
+          'name' => $account['name'],
           'keep' => 1,
-          'grant_view' => $account->grant_view,
-          'grant_update' => $account->grant_update,
-          'grant_delete' => $account->grant_delete,
+          'grant_view' => $account['grant_view'],
+          'grant_update' => $account['grant_update'],
+          'grant_delete' => $account['grant_delete'],
         ];
       }
     }
     else {
       // Perform search.
+
       if ($form_values['keys']) {
         $uids = [];
         $query = $db->select('users_field_data', 'ufd');
@@ -120,11 +121,12 @@ class GrantsForm extends FormBase {
           // assume it's MySQL.
           $cast_type = 'unsigned';
         }
+
         foreach (array_keys($form_values['uid']) as $uid) {
           if (!$form_values['uid'][$uid]['keep']) {
             foreach (['grant_view', 'grant_update', 'grant_delete'] as $grant_type) {
 
-              $query = $db->select('node_access', 'na');
+              $query = $db->select('nodeaccess', 'na');
               $query->join('user__roles', 'r', '(na.gid = CAST(r.roles_target_id as ' . $cast_type . '))');
               $query->condition('na.nid', $nid, '=');
               $query->condition('na.realm', 'nodeaccess_rid', '=');
@@ -135,7 +137,7 @@ class GrantsForm extends FormBase {
               $results = $query->execute();
               $count1 = $results->fetchField();
 
-              $query = $db->select('node_access', 'na');
+              $query = $db->select('nodeaccess', 'na');
               $query->condition('na.nid', $nid, '=');
               $query->condition('na.realm', 'nodeaccess_uid', '=');
               $query->condition('na.gid', $uid, '=');
@@ -144,7 +146,6 @@ class GrantsForm extends FormBase {
               $query = $query->countQuery();
               $results = $query->execute();
               $count2 = $results->fetchField();
-
               $form_values['uid'][$uid][$grant_type] = $count1 || $count2;
             }
             $form_values['uid'][$uid]['keep'] = TRUE;
@@ -157,6 +158,7 @@ class GrantsForm extends FormBase {
     $form_values['uid'] = isset($form_values['uid']) ? $form_values['uid'] : [];
     $roles = $form_values['rid'];
     $users = $form_values['uid'];
+
     $form['nid'] = [
       '#type' => 'hidden',
       '#value' => $nid,
@@ -251,6 +253,7 @@ class GrantsForm extends FormBase {
         '#type' => 'table',
         '#header' => $header,
       ];
+
       foreach ($users as $uid => $account) {
         $form['uid'][$uid]['name'] = [
           '#markup' => $account['name'],
@@ -312,7 +315,6 @@ class GrantsForm extends FormBase {
     $nid = $values['nid'];
     $grants = [];
     $node = Node::load($nid);
-
     foreach (['uid', 'rid'] as $type) {
       $realm = 'nodeaccess_' . $type;
       if (isset($values[$type]) && is_array($values[$type])) {

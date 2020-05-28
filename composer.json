@@ -1,0 +1,8 @@
+{
+    "name": "mbagnall/nodeaccess",
+    "description": "Provides access on a per node basis.",
+    "require": {
+        "php": "^7.2",
+        "drupal/core-recommended": "^9"
+    }
+}

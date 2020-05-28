@@ -1,5 +1,5 @@
 name: Nodeaccess
-description: Provides per node access control.
+description: Provides access on a per node basis.
 package: Access control
 configure: nodeaccess.administration
 type: module
