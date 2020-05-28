@@ -8,23 +8,12 @@ use taxonomy. You can assign permission to view, edit or delete each
 individual node by user or role. Once enabled, a 'grant' tab will appear on 
 node pages. You can click this and assign permissions for that node.
 
-  * For a full description of the module, visit the project page:
-   https://www.drupal.org/project/nodeaccess
+  * For a full description of the module, visit the project page below. That is also the place to submit pull requests.
+    https://github.com/ElusiveMind/nodeaccess
 
-  * To submit bug reports and feature suggestions, or to track changes:
-   https://www.drupal.org/project/issues/nodeaccess
 
-REQUIREMENTS
-------------
-
-INSTALLATION
-------------
-
-  * Install as you would normally install a contributed Drupal module. Visit:
-   https://www.drupal.org/docs/8/extending-drupal-8/installing-drupal-8-modules
-   for further information.
-
-  * Strongly recommend backing up your database before installing this module.
+  * To submit bug reports, feature suggestions:
+    https://github.com/ElusiveMind/nodeaccess/issues
 
 CONFIGURATION
 -------------

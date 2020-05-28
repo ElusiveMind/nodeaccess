@@ -1,8 +1,13 @@
 {
-    "name": "mbagnall/nodeaccess",
-    "description": "Provides access on a per node basis.",
-    "require": {
-        "php": "^7.2",
-        "drupal/core-recommended": "^9"
-    }
+  "name": "mbagnall/nodeaccess",
+  "description": "Provides access on a per node basis.",
+  "type": "drupal-module",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": "^7.2",
+    "drupal/core-recommended": "^8.8.0 || ^9.0"
+  },
+  "conflict": {
+    "drupal/nodeaccess": "*"
+  }
 }
