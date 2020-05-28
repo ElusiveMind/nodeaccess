@@ -1,6 +1,6 @@
 {
   "name": "mbagnall/nodeaccess",
-  "description": "Provides access on a per node basis.",
+  "description": "Provides access control to Drupal nodes based on role. Access can also be controled by specific user. Drupal 9 ready. ",
   "type": "drupal-module",
   "license": "GPL-2.0-or-later",
   "require": {

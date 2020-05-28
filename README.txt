@@ -1,5 +1,7 @@
 INTRODUCTION
 ------------
+This module is now fully Drupal 9 compatible and will be maintained to remain so.
+Many interface and feature enhancements to come.
 
 This module allows you to manage permissions for nodes by role and user. In 
 other words, it implements per node access control for users and groups. With 
