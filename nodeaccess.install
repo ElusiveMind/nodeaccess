@@ -18,6 +18,7 @@ function nodeaccess_install() {
   $grants['anonymous']['grant_view'] = (int) in_array('access content', $role_perms['anonymous']);
   $grants['authenticated']['grant_view'] = (int) in_array('access content', $role_perms['authenticated']);
   $role_alias = [];
+  $role_map = [];
   $settings = \Drupal::configFactory()->getEditable('nodeaccess.settings');
 
   foreach (NodeType::loadMultiple() as $type => $bundle) {
@@ -123,7 +124,6 @@ function nodeaccess_update_8101() {
         'allow' => 0,
       ];
     }
-    $i++;
   }
   $config->set('role_alias', $role_alias);
   $config->save();

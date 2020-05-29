@@ -348,6 +348,7 @@ class GrantsForm extends FormBase {
         ])
         ->execute();
     }
+
     \Drupal::entityTypeManager()->getAccessControlHandler('node')->acquireGrants($node);
     \Drupal::messenger()->addMessage($this->t('Grants saved.'));
 
