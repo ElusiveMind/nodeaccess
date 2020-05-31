@@ -71,7 +71,7 @@ class GrantsForm extends FormBase {
       $query = $db->select('nodeaccess', 'n');
       $query->join('users_field_data', 'ufd', 'ufd.uid = n.gid');
       $query->fields('n', ['grant_view', 'grant_update', 'grant_delete', 'nid']);
-      $query->fields('ufd', ['name']);
+      $query->fields('ufd', ['name', 'uid']);
       $query->condition('n.nid', $nid, '=');
       $query->condition('n.realm', 'nodeaccess_uid', '=');
       $query->orderBy('ufd.name', 'ASC');
@@ -297,7 +297,7 @@ class GrantsForm extends FormBase {
     // Delete unkept users.
     if (!empty($uids) && is_array($uids)) {
       foreach ($uids as $uid => $row) {
-        if (!$row['keep']) {
+        if (empty($row['keep'])) {
           unset($uids[$uid]);
         }
       }

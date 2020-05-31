@@ -262,23 +262,57 @@ function nodeaccess_node_type_insert(NodeTypeInterface $type) {
 function nodeaccess_node_access(NodeInterface $node, $op, $account) {
   $settings = \Drupal::configFactory()->get('nodeaccess.settings');
   $role_map = $settings->get('role_map');
+
   switch ($op) {
     case 'update':
     case 'delete':
+      $access = AccessResult::forbidden();
+      // We check if the role has particular access to this node.
+      $grants = _nodeaccess_get_grants($node);
+      $uid = $account->id();
+
       // If the node belongs to a deleted user.
-      if ($account->id() == 0 && $node->getOwnerId() == 0) {
+      if ($uid == 0 && $node->getOwnerId() == 0) {
         // We check if the role has particular access to this node.
-        $grants = _nodeaccess_get_grants($node);
         $anonymous_rid = $role_map[RoleInterface::ANONYMOUS_ID];
         // If anonymous has rights to this node, we allow them.
-        if (($grants['rid'][$anonymous_rid]['grant_update'] && $op == 'update') ||
-            ($grants['rid'][$anonymous_rid]['grant_delete'] && $op == 'delete')) {
-          return AccessResult::Allowed();
+        if ((isset($grants['rid'][$anonymous_rid]['grant_update']) && $op == 'update') ||
+           (isset($grants['rid'][$anonymous_rid]['grant_delete']) && $op == 'delete')) {
+           $access = AccessResult::allowed();
+         }
+         else {
+           $access = AccessResult::forbidden();
         }
-        return AccessResult::forbidden();
       }
+      else {
+        if (!empty($grants['uid']) && array_key_exists($uid, $grants['uid'])) {
+          if (($grants['uid'][$uid]['grant_update'] && $op == 'update') ||
+              ($grants['uid'][$uid]['grant_delete'] && $op == 'delete')) {
+            $access = AccessResult::allowed();
+          }
+        }
+        else if (!empty($grants['rid'])) {
+          $access = AccessResult::forbidden();
+          foreach ($account->getRoles() as $rid) {
+            $rid = $role_map[$rid];
+            if (($grants['rid'][$rid]['grant_update'] && $op == 'update') ||
+                ($grants['rid'][$rid]['grant_delete'] && $op == 'delete')) {
+              $access = AccessResult::allowed();
+            }
+          }
+        }
+        else {
+          $access = AccessResult::neutral();
+        }
+      }
+
+      $access->cachePerUser();
+      break;
+
+    default:
       break;
   }
+  return $access;
 }
 
 /**
@@ -289,11 +323,12 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
  */
 function _nodeaccess_get_grants($node) {
   $grants = [];
-  // Load all roles.
   $db = \Drupal::database();
+
+  // Load all roles.
   $result = $db->select('nodeaccess', 'na')
     ->fields('na', ['gid', 'grant_view', 'grant_update', 'grant_delete'])
-    ->condition('nid', $node->id, '=')
+    ->condition('nid', $node->id(), '=')
     ->condition('realm', 'nodeaccess_rid', '=')
     ->execute()
     ->fetchAll();
@@ -304,21 +339,18 @@ function _nodeaccess_get_grants($node) {
       'grant_delete' => $grant->grant_delete,
     ];
   }
+
   // Load users from node_access.
-  $db = \Drupal::database();
   $entries = $db->select('nodeaccess', 'n');
   $entries->join('users_field_data', 'ufd', 'ufd.uid = n.gid');
-  $entries->fields('n', ['grant_view', 'grant_update', 'grant_delete'])
-    ->condition('n.nid', $node->id, '=')
-    ->condition('n.realm', 'nodeaccess_uid', '=')
-    ->orderBy('ufd.name', 'ASC');
-  $result = $entries->execute();
+  $entries->fields('n', ['grant_view', 'grant_update', 'grant_delete']);
+  $entries->fields('ufd', ['uid', 'name']);
+  $entries->condition('n.nid', $node->id(), '=');
+  $entries->condition('n.realm', 'nodeaccess_uid', '=');
+  $entries->orderBy('ufd.name', 'ASC');
+  $results = $entries->execute();
 
-  $results = [];
-  while($data = $result->fetchObject()) {
-    $results[] = $data;
-  }
-  foreach ($result as $account) {
+  foreach ($results as $account) {
     $grants['uid'][$account->uid] = [
       'name' => $account->name,
       'keep' => 1,
