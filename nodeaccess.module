@@ -286,8 +286,8 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
       }
       else {
         if (!empty($grants['uid']) && array_key_exists($uid, $grants['uid'])) {
-          if (($grants['uid'][$uid]['grant_update'] && $op == 'update') ||
-              ($grants['uid'][$uid]['grant_delete'] && $op == 'delete')) {
+          if ((isset($grants['uid'][$uid]['grant_update']) && $op == 'update') ||
+              (isset($grants['uid'][$uid]['grant_delete']) && $op == 'delete')) {
             $access = AccessResult::allowed();
           }
         }
@@ -295,8 +295,8 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
           $access = AccessResult::forbidden();
           foreach ($account->getRoles() as $rid) {
             $rid = $role_map[$rid];
-            if (($grants['rid'][$rid]['grant_update'] && $op == 'update') ||
-                ($grants['rid'][$rid]['grant_delete'] && $op == 'delete')) {
+            if ((isset($grants['rid'][$rid]['grant_update']) && $op == 'update') ||
+                (isset($grants['rid'][$rid]['grant_delete']) && $op == 'delete')) {
               $access = AccessResult::allowed();
             }
           }
