@@ -262,6 +262,7 @@ function nodeaccess_node_type_insert(NodeTypeInterface $type) {
 function nodeaccess_node_access(NodeInterface $node, $op, $account) {
   $settings = \Drupal::configFactory()->get('nodeaccess.settings');
   $role_map = $settings->get('role_map');
+  $access = NULL;
 
   switch ($op) {
     case 'update':
