@@ -8,6 +8,7 @@
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\user\RoleInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\node\NodeTypeInterface;
 use Drupal\Core\Access\AccessResult;
@@ -361,4 +362,91 @@ function _nodeaccess_get_grants($node) {
     ];
   }
   return $grants;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function nodeaccess_form_node_type_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $type = $form_state->getFormObject()->getEntity();
+  $bundle = $form['type']['#default_value'];
+  $form['nodeaccess'] = [
+    '#type' => 'details',
+    '#title' => t('Nodeaccess'),
+    '#group' => 'additional_settings',
+    '#weight' => 0,
+  ];
+  $form['nodeaccess']['enabled'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Show grant tab for this node type.'),
+    '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_grant_tab_' . $bundle, FALSE),
+  ];
+  $form['nodeaccess']['table'] = [
+    '#type' => 'table',
+    '#caption' => t(''),
+    '#header' => [
+      t('Role'),
+      t('View'),
+      t('Edit'),
+      t('Delete'),
+    ],
+    '#id' => 'nodeaccess-table',
+    '#attached' => [
+      'library' => [
+        'nodeaccess/form-styling',
+      ],
+    ],
+  ];
+
+  /**
+   * Iterate through our roles and present the default option for each one. Include authors at
+   * the bottom of the list.
+   */
+  $i = 0;
+  $permissions = ['view', 'edit', 'delete'];
+  $roles = user_roles(FALSE, NULL);
+  foreach ($roles as $key => $role) {
+    foreach ($permissions as $permission) {
+      $form['nodeaccess']['table'][$i][$bundle . '_' . $key] = [
+        '#markup' => $role->label(),
+      ];
+      $form['nodeaccess']['table'][$i][$bundle . '_' . $key]['attributes']['class'][] = 'fuckbuddy';
+      $form['nodeaccess']['table'][$i][$bundle . '_' . $key . '_' . $permission] = [
+        '#type' => 'checkbox',
+        '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . $key . '_' . $permission, FALSE),
+      ];
+    }
+    $i++;
+  }
+
+  foreach ($permissions as $permission) {
+    $form['nodeaccess']['table'][$i]['author'] = [
+      '#markup' => 'Node Author (Not editable per node.)',
+    ];
+    $form['nodeaccess']['table'][$i]['author']['attributes']['class'][] = 'fuckbuddy';
+    $form['nodeaccess']['table'][$i][$bundle . '_author_' . $permission] = [
+      '#type' => 'checkbox',
+      '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . 'author_' . $permission, FALSE),
+    ];
+  }
+  $form['#entity_builders'][] = 'nodeaccess_node_type_edit_form_builder';
+}
+
+/**
+ * Entity builder for the nodeaccess permissions form.
+ *
+ * @see nodeaccess_form_node_type_edit_form_alter()
+ */
+function nodeaccess_node_type_edit_form_builder($entity_type, NodeTypeInterface $type, &$form, FormStateInterface $form_state) {
+  $permission_definitions = $form_state->getValue('table');
+  $bundle = $form_state->getValue('type');
+  $type->setThirdPartySetting('nodeaccess', 'nodeaccess_grant_tab_' . $bundle, $form_state->getValue('enabled'));
+
+  foreach ($permission_definitions as $key => $permissions) {
+    foreach ($permissions as $permission => $enabled) {
+      $type->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $permission, $enabled);
+    }
+  }
+  $renderCache = \Drupal::service('cache.render');
+  $renderCache->invalidateAll();
 }
