@@ -369,38 +369,66 @@ function _nodeaccess_get_grants($node) {
  */
 function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $type = $form_state->getFormObject()->getEntity();
+
+
   $form['nodeaccess'] = [
     '#type' => 'details',
     '#title' => t('Nodeaccess'),
     '#group' => 'advanced',
     '#attributes' => [
-      'class' => ['node-form-options']
+      'class' => ['node-form-nodeaccess']
     ],
     '#attached' => [
       'library' => ['node/drupal.node'],
     ],
-    '#weight' => 100,
+    '#weight' => 85,
     '#optional' => TRUE,
-    '#open' => TRUE,
-  ];
-
-  $build['table'] = [
-    '#type' => 'table',
-    '#header' => [
-      t('Role'),
-      t('View'),
-      t('Edit'),
-      t('Delete'),
+    '#open' => FALSE,
+    'table' => [
+      '#type' => 'table',
+      '#header' => [
+        t('Role'),
+        t('View'),
+        t('Edit'),
+        t('Del'),
+      ],
+      '#weight' => 10,
+      '#attached' => [
+        'library' => [
+          'nodeaccess/form-styling',
+        ],
+      ],
     ],
-    '#weight' => 200,
   ];
-
-  $form['table'] = [
-    '#type' => 'fieldgroup',
-    '#markup' => render($build),
+  $form['nodeaccess_enable'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Engage nodeaccess control for this node'),
     '#group' => 'nodeaccess',
+    '#weight' => 0,
   ];
 
+  $form['nodeaccess']['table']['anonymous']['role'] = [
+    '#markup' => 'Anonymous',
+  ];
+  $form['nodeaccess']['table']['anonymous']['view'] = [
+    '#type' => 'checkbox',
+  ];
+  $form['nodeaccess']['table']['anonymous']['edit'] = [
+    '#type' => 'checkbox',
+  ];
+  $form['nodeaccess']['table']['anonymous']['delete'] = [
+    '#type' => 'checkbox',
+  ];
+
+  foreach (array_keys($form['actions']) as $action) {
+    if ($action != 'preview' && isset($form['actions'][$action]['#type']) && $form['actions'][$action]['#type'] === 'submit') {
+      $form['actions'][$action]['#submit'][] = 'nodeaccess_custom_entity_submit';
+    }
+  }
+}
+
+function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) {
+  $values = $form_state->getValues();
 }
 
 /**

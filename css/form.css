@@ -1,12 +1,19 @@
+/* Table styles for the content type, default grants form. */
 #nodeaccess-table th:not(:first-child) {
   text-align: center;
 }
-
 #nodeaccess-table td:not(:first-child) {
   text-align: center;
 }
-
 #nodeaccess-table tr:last-child {
   background-color: #000000;
   color: #FFFFFF;
+}
+
+/* Table styles for the node form (create/edit). */
+.node-form-nodeaccess td:not(:first-child) {
+  text-align: center;
+}
+.node-form-nodeaccess th:not(:first-child) {
+  text-align: center;
 }
