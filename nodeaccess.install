@@ -66,7 +66,13 @@ function nodeaccess_schema() {
         'not null' => TRUE,
         'default' => 0,
       ],
-      'gid' => [
+      'role' => [
+        'type' => 'varchar',
+        'length' => 191,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'user' => [
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -100,7 +106,7 @@ function nodeaccess_schema() {
         'default' => 0,
       ],
     ],
-    'primary key' => ['nid', 'gid', 'realm'],
+    'primary key' => ['nid', 'role', 'user', 'realm'],
   ];
   return $schema;
 }
@@ -109,6 +115,7 @@ function nodeaccess_schema() {
  * Update nodeaccess allowed role settings.
  */
 function nodeaccess_update_8101() {
+  /*
   $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
   $role_alias = $config->get('role_alias');
   foreach (user_roles() as $id => $role) {
@@ -127,4 +134,5 @@ function nodeaccess_update_8101() {
   }
   $config->set('role_alias', $role_alias);
   $config->save();
+  */
 }

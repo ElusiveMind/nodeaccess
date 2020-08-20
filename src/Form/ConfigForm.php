@@ -55,6 +55,7 @@ class ConfigForm extends ConfigFormBase {
       '#description' => $this->t('If you are only using this access control module, you can safely ignore this. If you are using multiple access control modules, and you want the grants given on individual nodes to override any grants given by other modules, you should check this box.'),
     ];
 
+    /*
     // Select whether to preserve hidden grants.
     $form['preserve'] = [
       '#type' => 'checkbox',
@@ -62,8 +63,10 @@ class ConfigForm extends ConfigFormBase {
       '#default_value' => $settings->get('preserve'),
       '#description' => '<small>' . $this->t('If you check this box, any hidden grants are preserved when you save grants. Otherwise all grants users are not allowed to view or edit are revoked on save.') . '</small>',
     ];
+    */
 
     // Select permissions you want to allow users to view and edit.
+    /*
     $form['grants'] = [
       '#type' => 'details',
       '#open' => FALSE,
@@ -86,9 +89,10 @@ class ConfigForm extends ConfigFormBase {
       '#title' => $this->t('Delete'),
       '#default_value' => $allowed_grants['delete'],
     ];
-
+    */
     // Select roles the permissions of which you want to allow users to
     // view and edit, and the aliases and weights of those roles.
+    /*
     $form['role'] = [
       '#type' => 'details',
       '#open' => FALSE,
@@ -132,8 +136,10 @@ class ConfigForm extends ConfigFormBase {
       $form['role']['alias'][$id]['#weight'] = $role['weight'];
       $form['role']['alias'][$id]['#attributes']['class'][] = 'draggable';
     }
+    */
 
     // Generate fieldsets for each node type.
+    /*
     foreach ($node_types as $type => $bundle) {
       $user_perms = $settings->get($type);
       $form[$type] = [
@@ -194,6 +200,7 @@ class ConfigForm extends ConfigFormBase {
       ];
 
     }
+    */
     return parent::buildForm($form, $form_state);
   }
 
@@ -203,23 +210,28 @@ class ConfigForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Update configuration.
     $values = $form_state->getValues();
-    $node_types = NodeType::loadMultiple();
-    $allowed_types = [];
+    //$node_types = NodeType::loadMultiple();
+    //$allowed_types = [];
 
     $settings = $this->config('nodeaccess.settings')
-      ->set('priority', $values['priority'])
-      ->set('preserve', $values['preserve'])
-      ->set('grants', $values['grants']);
+      ->set('priority', $values['priority']);
+    //  ->set('preserve', $values['preserve'])
+    //  ->set('grants', $values['grants']);
+
+    /*
     foreach ($node_types as $type => $bundle) {
       $config = $values[$type]['user_permissions'];
       $allowed_types[$type] = $values[$type]['show'];
       $settings->set($type, $config);
-    }
-    $settings->set('allowed_types', $allowed_types);
+    }*/
+
+    //$settings->set('allowed_types', $allowed_types);
     // Save allowed roles, role aliases and weights.
+    /*
     $settings->set('role_alias', $values['role']['alias']);
     $settings->save();
-    node_access_needs_rebuild(TRUE);
+    */
+    //node_access_needs_rebuild(TRUE);
     parent::submitForm($form, $form_state);
   }
 

@@ -367,6 +367,45 @@ function _nodeaccess_get_grants($node) {
 /**
  * Implements hook_form_FORM_ID_alter().
  */
+function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $type = $form_state->getFormObject()->getEntity();
+  $form['nodeaccess'] = [
+    '#type' => 'details',
+    '#title' => t('Nodeaccess'),
+    '#group' => 'advanced',
+    '#attributes' => [
+      'class' => ['node-form-options']
+    ],
+    '#attached' => [
+      'library' => ['node/drupal.node'],
+    ],
+    '#weight' => 100,
+    '#optional' => TRUE,
+    '#open' => TRUE,
+  ];
+
+  $build['table'] = [
+    '#type' => 'table',
+    '#header' => [
+      t('Role'),
+      t('View'),
+      t('Edit'),
+      t('Delete'),
+    ],
+    '#weight' => 200,
+  ];
+
+  $form['table'] = [
+    '#type' => 'fieldgroup',
+    '#markup' => render($build),
+    '#group' => 'nodeaccess',
+  ];
+
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
 function nodeaccess_form_node_type_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $type = $form_state->getFormObject()->getEntity();
   $bundle = $form['type']['#default_value'];
@@ -410,7 +449,6 @@ function nodeaccess_form_node_type_edit_form_alter(&$form, FormStateInterface $f
       $form['nodeaccess']['table'][$i][$bundle . '_' . $key] = [
         '#markup' => $role->label(),
       ];
-      $form['nodeaccess']['table'][$i][$bundle . '_' . $key]['attributes']['class'][] = 'fuckbuddy';
       $form['nodeaccess']['table'][$i][$bundle . '_' . $key . '_' . $permission] = [
         '#type' => 'checkbox',
         '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . $key . '_' . $permission, FALSE),
@@ -423,7 +461,7 @@ function nodeaccess_form_node_type_edit_form_alter(&$form, FormStateInterface $f
     $form['nodeaccess']['table'][$i]['author'] = [
       '#markup' => 'Node Author (Not editable per node.)',
     ];
-    $form['nodeaccess']['table'][$i]['author']['attributes']['class'][] = 'fuckbuddy';
+    $form['nodeaccess']['table'][$i]['author']['attributes']['class'][] = 'test';
     $form['nodeaccess']['table'][$i][$bundle . '_author_' . $permission] = [
       '#type' => 'checkbox',
       '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . 'author_' . $permission, FALSE),

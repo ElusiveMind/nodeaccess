@@ -6,6 +6,19 @@ use Drupal\Core\Cache\Cache;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\node\Entity\Node;
+use Drupal\node\NodeInterface;
+
+/**
+ * Rationale:
+ * In Drupal, if you give an authenticated user access to something, you basically give
+ * all authenticated users access to it. Because every logged in user, regardless of
+ * any other role, is authenticated. As such, if you elect to give authenticated users
+ * access, you are giving acccess to all roles.
+ * 
+ * The interface needs to reflect this so there is no confusion. So if a user opts to
+ * grant access to the authenticated user, we will check the boxes on all roles except
+ * anonymous.
+ */
 
 /**
  * Builds the configuration form.
@@ -25,41 +38,89 @@ class GrantsForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, Node $node = NULL) {
     $db = \Drupal::database();
     $form_values = $form_state->getValues();
+    //$type = $form_state->getFormObject()->getEntity();
     $settings = \Drupal::configFactory()->get('nodeaccess.settings');
     $nid = $node->id();
-    $role_alias = $settings->get('role_alias');
-    $role_map = $settings->get('role_map');
-    $allowed_roles = [];
+    $roles = user_roles(FALSE, NULL);
     $user = $this->currentUser();
-    $allowed_grants = $settings->get('grants');
-    foreach ($role_alias as $id => $role) {
-      if ($role['allow']) {
-        $allowed_roles[] = $id;
+    $bundle = $node->bundle();
+
+    $storage = \Drupal::entityTypeManager()
+    ->getStorage('node');
+    print "<pre>";var_dump($storage);exit();
+
+    /**
+     * If authenticated users are allowed nodeaccess, so are all roles not
+     * named anonymous.
+     */
+    $all_anonymous_roles = FALSE;
+    $authenticated = $roles['authenticated'];
+    if ($authenticated->hasPermission('include in nodeaccess grants')) {
+      $all_non_anonymous_roles = TRUE;
+    }
+
+    /** Determine which roles have nodeaccess. */
+    $allowed_roles = [];
+    foreach ($roles as $id => $role) {
+      if ($all_non_anonymous_roles === TRUE) {
+        $allowed_roles[$id] = $role;
+      }
+      else {
+        if ($role->hasPermission('include in nodeaccess grants')) {
+          $allowed_roles[$id] = $role;
+        }
       }
     }
-    if (!$form_values) {
+
+    /**
+     * Rationale:
+     * If there are no form values, then we want to present the current grants view.
+     * If there are no grants for a particular piece of content, then we shoudl display
+     * the defaults. Keep in mind, this does not mean if no grants are give, defaults
+     * should only be displayed if no grant records exist for a given node. Default grants
+     * do not take into consideration user-specific grants, although this is an edge case
+     * because saving a user-specific grant should save grants for the current node 
+     * as well.
+     */
+    if (empty($form_values)) {
       $form_values = [];
-      // Load all roles.
-      foreach ($role_alias as $id => $role) {
-        $rid = $role_map[$id];
+
+      $query = $db->select('nodeaccess', 'n')
+        ->condition('n.nid', $nid)
+        ->execute();
+      $result = $query->fetchAssoc();
+      if (count($result) < 1) {
+        // We have no grants defined for this piece of content, so give them the defaults.
+        foreach ($allowed_roles as $id => $role) {
+          foreach (['view', 'edit', 'delete'] as $permission) {
+            $grant = $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . $id . '_' . $permission, FALSE);
+            $form_values['rid'][$id]['grant_' . $permission] = (boolean) $grant;
+          }
+        }
+      }
+
+      print "<pre>";
+      print_r($form_values['rid']);
+      exit();
+
+      foreach ($roles as $id => $role) {
+        $label = $role->get('label');
         $query = $db->select('nodeaccess', 'n')
           ->fields('n', ['grant_view', 'grant_update', 'grant_delete'])
-          ->condition('n.gid', $rid, '=')
+          ->condition('n.role', $id, '=')
           ->condition('n.realm', 'nodeaccess_rid', '=')
           ->condition('n.nid', $nid)
           ->execute();
         $result = $query->fetchAssoc();
         if (!empty($result)) {
-          $form_values['rid'][$rid] = [
-            'name' => $role['alias'],
+          $form_values['rid'][$id] = [
             'grant_view' => (boolean) $result['grant_view'],
             'grant_update' => (boolean) $result['grant_update'],
             'grant_delete' => (boolean) $result['grant_delete'],
           ];
         }
         else {
-          $form_values['rid'][$rid] = [
-            'name' => $role['alias'],
+          $form_values['rid'][$id] = [
             'grant_view' => FALSE,
             'grant_update' => FALSE,
             'grant_delete' => FALSE,
@@ -69,15 +130,15 @@ class GrantsForm extends FormBase {
 
       // Load users from nodeaccess.
       $query = $db->select('nodeaccess', 'n');
-      $query->join('users_field_data', 'ufd', 'ufd.uid = n.gid');
+      $query->join('users_field_data', 'ufd', 'ufd.uid = n.user');
       $query->fields('n', ['grant_view', 'grant_update', 'grant_delete', 'nid']);
-      $query->fields('ufd', ['name', 'uid']);
+      $query->fields('ufd', ['name', 'user']);
       $query->condition('n.nid', $nid, '=');
       $query->condition('n.realm', 'nodeaccess_uid', '=');
       $query->orderBy('ufd.name', 'ASC');
       $results = $query->execute();
       while ($account = $results->fetchAssoc()) {
-        $form_values['uid'][$account['uid']] = [
+        $form_values['uid'][$account['user']] = [
           'name' => $account['name'],
           'keep' => 1,
           'grant_view' => $account['grant_view'],
@@ -164,9 +225,6 @@ class GrantsForm extends FormBase {
       '#value' => $nid,
     ];
 
-    // If $preserve is TRUE, the fields the user is not allowed to view or
-    // edit are included in the form as hidden fields to preserve them.
-    $preserve = $settings->get('preserve');
     // Roles table.
     if (count($allowed_roles)) {
       $header = [];
@@ -185,10 +243,9 @@ class GrantsForm extends FormBase {
         '#header' => $header,
         '#tree' => TRUE,
       ];
-      foreach ($allowed_roles as $id) {
-        $rid = $role_map[$id];
-        $form['rid'][$rid]['name'] = [
-          '#markup' => $role_alias[$id]['alias'],
+      foreach ($allowed_roles as $id => $role) {
+        $form['rid'][$id]['name'] = [
+          '#markup' => $role->get('label'),
         ];
         if ($allowed_grants['view']) {
           $form['rid'][$rid]['grant_view'] = [

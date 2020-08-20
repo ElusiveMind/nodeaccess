@@ -24,11 +24,12 @@ class NodeGrantAccessCheck implements AccessInterface {
     $nid = $node;
     $node = Node::load($nid);
     $bundle = $node->getType();
+    $user = \Drupal::currentUser();
 
     $interface =  NodeType::load($bundle);
-    $granted = $interface->getThirdPartySetting('nodeaccess', 'nodeaccess_grant_tab_' . $bundle, FALSE);
+    $enabled = $interface->getThirdPartySetting('nodeaccess', 'nodeaccess_grant_tab_' . $bundle, FALSE);
 
-    if (!empty($granted)) {
+    if (!empty($enabled) && ($user->hasPermission('grant node view') || $user->hasPermission('grant node update') || $user->hasPermission('grant node delete'))) {
       return AccessResult::Allowed();
     }
     else {
