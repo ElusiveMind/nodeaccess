@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\node\NodeTypeInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\node\NodeInterface;
+use Drupal\node\Entity\NodeType;
 
 /**
  * Implements hook_help().
@@ -366,10 +367,36 @@ function _nodeaccess_get_grants($node) {
 
 /**
  * Implements hook_form_FORM_ID_alter().
+ *
+ * Rationale:
+ * In Drupal, if you give an authenticated user access to something, you basically give
+ * all authenticated users access to it. Because every logged in user, regardless of
+ * any other role, is authenticated. As such, if you elect to give authenticated users
+ * access, you are giving acccess to all roles.
+ *
+ * The interface needs to reflect this so there is no confusion. So if a user opts to
+ * grant access to the authenticated user, we will check the boxes on all roles except
+ * anonymous.
  */
 function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  $type = $form_state->getFormObject()->getEntity();
+  // We have to load our node type here to use our default third party settings if needed.
+  // To get this, we need to get the bundhe from our $form variable. Need to be able to
+  // dynamically check in the event there are some customizations in other hooks.
+  $bundle = NULL;
+  foreach ($form['#process'] as $key => $process) {
+    if (is_array($process)) {
+      foreach ($process as $proc) {
+        if ($proc instanceOf Drupal\Core\Entity\Entity\EntityFormDisplay) {
+          $bundle = $proc->get('bundle');
+        }
+      }
+    }
+  }
 
+  $type = NULL;
+  if (!empty($bundle)) {
+    $type = NodeType::load($bundle);
+  }
 
   $form['nodeaccess'] = [
     '#type' => 'details',
@@ -407,18 +434,59 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
     '#weight' => 0,
   ];
 
-  $form['nodeaccess']['table']['anonymous']['role'] = [
-    '#markup' => 'Anonymous',
-  ];
-  $form['nodeaccess']['table']['anonymous']['view'] = [
-    '#type' => 'checkbox',
-  ];
-  $form['nodeaccess']['table']['anonymous']['edit'] = [
-    '#type' => 'checkbox',
-  ];
-  $form['nodeaccess']['table']['anonymous']['delete'] = [
-    '#type' => 'checkbox',
-  ];
+  /**
+   * Iterate through our roles and present the default option for each one. Include authors at
+   * the bottom of the list.
+   *
+   * Rationale:
+   * If there are no grants for a particular piece of content, then we should display
+   * the defaults. Keep in mind, this does not mean if no grants are given, defaults
+   * should only be displayed if no grant records exist for a given node. Default grants
+   * do not take into consideration user-specific grants, although this is an edge case
+   * because saving a user-specific grant should save grants for the current node 
+   * as well.
+   */
+  $use_defaults = FALSE;
+  if (!empty($nid)) {
+    $db = \Drupal::database();
+    $entries = $db->select('nodeaccess', 'n')
+      ->condition('nid', $nid, '=')
+      ->execute()
+      ->fetchAll();
+    $node_count = count($entries);
+    if ($node_count < 1) {
+      $use_defaults = TRUE;
+    }
+  }
+  else {
+    $use_defaults = TRUE;
+  }
+
+  $i = 0;
+  $permissions = ['view', 'edit', 'delete'];
+  $roles = user_roles(FALSE, NULL);
+  foreach ($roles as $key => $role) {
+    foreach ($permissions as $permission) {
+      $form['nodeaccess']['table'][$i][$bundle . '_' . $key] = [
+        '#markup' => $role->label(),
+      ];
+      if ($type !== NULL && $use_defaults === TRUE) {
+        $default_value = $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . $key . '_' . $permission, FALSE);
+      }
+      elseif ($use_defaults === FALSE) {
+        // Pull grants from our grants table.
+      }
+      else {
+        $default_value = FALSE;
+      }
+
+      $form['nodeaccess']['table'][$i][$bundle . '_' . $key . '_' . $permission] = [
+        '#type' => 'checkbox',
+        '#default_value' => $default_value,
+      ];
+    }
+    $i++;
+  }
 
   foreach (array_keys($form['actions']) as $action) {
     if ($action != 'preview' && isset($form['actions'][$action]['#type']) && $form['actions'][$action]['#type'] === 'submit') {

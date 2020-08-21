@@ -1,5 +1,5 @@
 nodeaccess.administration:
-  path: '/admin/config/people/nodeaccess'
+  path: '/admin/structure/nodeaccess'
   defaults:
     _form: '\Drupal\nodeaccess\Form\ConfigForm'
     _title: 'Nodeaccess'

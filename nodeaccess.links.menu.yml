@@ -1,5 +1,5 @@
 nodeaccess.configuration:
-  title: 'Nodeaccess settings'
+  title: 'Nodeaccess'
   description: 'Configure user role access to content by node type, and allow granting per-node access to roles and users.'
-  parent: user.admin_index
+  parent: system.admin_structure
   route_name: nodeaccess.administration
