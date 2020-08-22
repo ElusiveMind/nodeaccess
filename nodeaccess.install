@@ -11,53 +11,66 @@ use Drupal\node\Entity\NodeType;
  * Implements hook_install().
  */
 function nodeaccess_install() {
-  // Set up default permissions to be view for authenticated and
-  // anonymous users, and all permissions for author.
-  $grants = [];
-  $role_perms = user_role_permissions(['anonymous', 'authenticated']);
-  $grants['anonymous']['grant_view'] = (int) in_array('access content', $role_perms['anonymous']);
-  $grants['authenticated']['grant_view'] = (int) in_array('access content', $role_perms['authenticated']);
-  $role_alias = [];
-  $role_map = [];
-  $settings = \Drupal::configFactory()->getEditable('nodeaccess.settings');
+  $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
+  $roles = user_roles(FALSE, NULL);
 
-  foreach (NodeType::loadMultiple() as $type => $bundle) {
-    // We check the edit permissions for anonymous and authenticated users.
-    $edit_perm = 'edit any ' . $type . ' content';
-    $grants['anonymous']['grant_update'] = (int) in_array($edit_perm, $role_perms['anonymous']);
-    $grants['authenticated']['grant_update'] = (int) in_array($edit_perm, $role_perms['authenticated']);
-    // We check the delete permissions for anonymous and authenticated users.
-    $delete_perm = 'delete any ' . $type . ' content';
-    $grants['anonymous']['grant_delete'] = (int) in_array($delete_perm, $role_perms['anonymous']);
-    $grants['authenticated']['grant_delete'] = (int) in_array($delete_perm, $role_perms['authenticated']);
-    // Author Permissions.
-    $grants['author'] = [
-      'grant_view' => 0,
-      'grant_update' => 0,
-      'grant_delete' => 0,
-    ];
-    $settings->set($type, $grants);
-  }
-  $i = 1;
-  foreach (user_roles() as $id => $role) {
-    $role_alias[$id] = [
-      'alias' => $role->label(),
-      'name' => $role->label(),
-      'weight' => 0,
-      'allow' => 0,
-    ];
-    $role_map[$id] = $i;
+  /**
+   * Set up an ID for our roles that way we can use them with our various node_access
+   * grants (our nodeaccess ones too!). This becomes the gid for role based access
+   * permissions.
+   */
+  $i = 0;
+  $roles_gids = [];
+  foreach ($roles as $role_id => $role) {
+    $roles_gids[$role_id] = $i;
     $i++;
   }
-  $settings->set('role_alias', $role_alias);
-  $settings->set('role_map', $role_map);
-  $settings->save();
+  $config->set('role_map', array_flip($roles_gids));
+  $config->save();
+
+  /**
+   * Define the default grants for each role based on what is set up in our existing
+   * permissions. Note that nodeaccess will not be enabled by default for individual
+   * nodes, so we are just setting up defaults, not assigning them to each node.
+   */
+  $role_perms = user_role_permissions(['anonymous', 'authenticated']);
+
+  foreach (NodeType::loadMultiple() as $type => $bundle) {
+    $bundle->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $type . '_' . 'anonymous_view', (int) in_array('access content', $role_perms['anonymous']));
+    $bundle->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $type . '_' . 'authenticated_view', (int) in_array('access content', $role_perms['authenticated']));
+
+    $edit_perm = 'edit any ' . $type . ' content';
+    $bundle->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $type . '_' . 'anonymous_update', (int) in_array($edit_perm, $role_perms['anonymous']));
+    $bundle->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $type . '_' . 'authenticated_update', (int) in_array($edit_perm, $role_perms['authenticated']));
+
+    $delete_perm = 'delete any ' . $type . ' content';
+    $bundle->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $type . '_' . 'anonymous_delete', (int) in_array($delete_perm, $role_perms['anonymous']));
+    $bundle->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $type . '_' . 'authenticated_delete', (int) in_array($delete_perm, $role_perms['authenticated']));
+
+    $bundle->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $type . '_' . 'author_view', 1);
+    $bundle->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $type . '_' . 'author_update', 1);
+    $bundle->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $type . '_' . 'author_delete', 1);
+    $bundle->save();
+  }
 }
 
 /**
  * Implements hook_schema().
  */
 function nodeaccess_schema() {
+  $schema = [];
+  $schema['nodeaccess_nodes_enabled'] = [
+    'fields' => [
+      'nid' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+    ],
+    'primary key' => ['nid'],
+  ];
+
   $schema['nodeaccess'] = [
     'fields' => [
       'nid' => [
@@ -66,13 +79,7 @@ function nodeaccess_schema() {
         'not null' => TRUE,
         'default' => 0,
       ],
-      'role' => [
-        'type' => 'varchar',
-        'length' => 191,
-        'not null' => TRUE,
-        'default' => '',
-      ],
-      'user' => [
+      'gid' => [
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -106,33 +113,7 @@ function nodeaccess_schema() {
         'default' => 0,
       ],
     ],
-    'primary key' => ['nid', 'role', 'user', 'realm'],
+    'primary key' => ['nid', 'gid', 'realm'],
   ];
   return $schema;
-}
-
-/**
- * Update nodeaccess allowed role settings.
- */
-function nodeaccess_update_8101() {
-  /*
-  $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
-  $role_alias = $config->get('role_alias');
-  foreach (user_roles() as $id => $role) {
-    if ($role_alias[$id]) {
-      $role_alias[$id]['alias'] = $role->label();
-      $role_alias[$id]['name'] = $role->label();
-    }
-    else {
-      $role_alias[$id] = [
-        'alias' => $role->label(),
-        'name' => $role->label(),
-        'weight' => 0,
-        'allow' => 0,
-      ];
-    }
-  }
-  $config->set('role_alias', $role_alias);
-  $config->save();
-  */
 }
