@@ -10,5 +10,5 @@ dependencies:
   - drupal:node
 
 version: '1.2.3'
-project: 'nodeaccess'
-project status url: 'https://www.drupalgardens.io/release-history'
+#project: 'nodeaccess'
+#project status url: 'https://www.drupalgardens.io/release-history'

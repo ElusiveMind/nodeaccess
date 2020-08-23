@@ -5,13 +5,3 @@ nodeaccess.administration:
     _title: 'Nodeaccess'
   requirements:
     _permission: 'administer nodeaccess'
-entity.node.grants:
-  path: '/node/{node}/grants'
-  defaults:
-    _form: '\Drupal\nodeaccess\Form\GrantsForm'
-    _title: 'Grants'
-  requirements:
-    _custom_access: '\Drupal\nodeaccess\AccessChecks\NodeGrantAccessCheck::access'
-    node: \d+
-  options:
-    _admin_route: TRUE
