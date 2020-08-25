@@ -16,6 +16,8 @@ use Drupal\node\NodeInterface;
 use Drupal\node\Entity\NodeType;
 use Drupal\node\Entity\Node;
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
 
 /**
  * Implements hook_help().
@@ -239,39 +241,6 @@ function nodeaccess_node_type_delete(NodeTypeInterface $type) {
   $config->clear($type->id())
     ->set('allowed_types', $allowed_types)
     ->save();
-}
-
-/**
- * Implements hook_ENTITY_TYPE_insert().
- */
-function nodeaccess_node_type_insert(NodeTypeInterface $type) {
-  $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
-
-  // New node type, default to whatever is set for access content permission.
-  $role_perms = user_role_permissions([RoleInterface::ANONYMOUS_ID, RoleInterface::AUTHENTICATED_ID]);
-  $anonymous_access = (int) in_array('access content', $role_perms[RoleInterface::ANONYMOUS_ID]);
-  $authenticated_access = (int) in_array('access content', $role_perms[RoleInterface::AUTHENTICATED_ID]);
-  $grants[RoleInterface::ANONYMOUS_ID] = [
-    'grant_view' => $anonymous_access,
-    'grant_update' => 0,
-    'grant_delete' => 0,
-  ];
-  $grants[RoleInterface::AUTHENTICATED_ID] = [
-    'grant_view' => $authenticated_access,
-    'grant_update' => 0,
-    'grant_delete' => 0,
-  ];
-  $grants['author'] = [
-    'grant_view' => 0,
-    'grant_update' => 0,
-    'grant_delete' => 0,
-  ];
-  $allowed_types = $config->get('allowed_types');
-  $allowed_types[$type->id()] = 0;
-  $config->set($type->id(), $grants)
-    ->set('allowed_types', $allowed_types)
-    ->save();
-  node_access_needs_rebuild(TRUE);
 }
 
 /**
@@ -562,8 +531,11 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
       ->execute();
     $ids = $query->fetchAssoc();
 
+    $query = ['nid' => $nid, 'uid' => $gid];
+    $link = Link::fromTextAndUrl(t('remove'), Url::fromRoute('nodeaccess.remove.user', $query))->toString();
+
     $form['nodeaccess']['table']['existing_user-'.$gid]['name'] = [
-      '#markup' => $ids['name'] . ' (remove)',
+      '#markup' => $ids['name'] . ' (' . $link . ')',
     ];
     foreach ($permissions as $permission) {
       $form['nodeaccess']['table']['existing_user-'.$gid][$gid . '-' . $permission] = [
@@ -607,6 +579,7 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
  * @see nodeaccess_form_node_form_alter
  */
 function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) {
+  
   $allowed_roles = nodeaccess_get_allowed_roles();
   $db = \Drupal::database();
   $values = $form_state->getValues();
@@ -694,8 +667,8 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
     if (!empty($values['table']['user'][$bundle . '_user'])) {
       preg_match_all("/\[([^\]]*)\]/", $values['table']['user'][$bundle . '_user'], $matches);
       $uid = $matches[1][0];
-      
-      $username = str_replace(' [' . $uid . ']', '');
+
+      $username = str_replace(' [' . $uid . ']', '', $values['table']['user'][$bundle . '_user']);
       $query = $db->select('users_field_data', 'ufd')
         ->fields('ufd', ['uid', 'name'])
         ->condition('name', $username)
@@ -719,13 +692,29 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
       }
     }
 
+    /**
+     * Handle author grants from the ones defined in our content type definition.
+     */
+    $type = NodeType::load($values['bundle']);
+    $node = Node::load($values['nid']);
+    $author_id = $node->getOwner()->id();
+    $db->insert('nodeaccess')
+      ->fields([
+        'nid' => $values['nid'],
+        'gid' => $author_id,
+        'realm' => 'nodeaccess_author',
+        'grant_view' => (int) $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $values['bundle'] . '_' . 'author_view', TRUE),
+        'grant_update' => (int) $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $values['bundle'] . '_' . 'author_update', TRUE),
+        'grant_delete' => (int) $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $values['bundle'] . '_' . 'author_delete', TRUE),
+    ])->execute();
+
     $db->insert('nodeaccess_nodes_enabled')
       ->fields([
         'nid' => $values['nid'],
       ])
       ->execute();
   }
-  $node = Node::load($values['nid']);
+  
   \Drupal::entityTypeManager()->getAccessControlHandler('node')->acquireGrants($node);
 
   $tags = ['node:' . $node->id()];
@@ -736,68 +725,72 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function nodeaccess_form_node_type_edit_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  $type = $form_state->getFormObject()->getEntity();
-  $bundle = $form['type']['#default_value'];
-  $form['nodeaccess'] = [
-    '#type' => 'details',
-    '#title' => t('Nodeaccess'),
-    '#group' => 'additional_settings',
-    '#weight' => 0,
-  ];
-  $form['nodeaccess']['enabled'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Show grant tab for this node type.'),
-    '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_grant_tab_' . $bundle, FALSE),
-  ];
-  $form['nodeaccess']['table'] = [
-    '#type' => 'table',
-    '#caption' => t(''),
-    '#header' => [
-      t('Role'),
-      t('View'),
-      t('Edit'),
-      t('Delete'),
-    ],
-    '#id' => 'nodeaccess-table',
-    '#attached' => [
-      'library' => [
-        'nodeaccess/form-styling',
-      ],
-    ],
-  ];
+function nodeaccess_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 
-  /**
-   * Iterate through our roles and present the default option for each one. Include authors at
-   * the bottom of the list.
-   */
-  $i = 0;
-  $permissions = ['view', 'update', 'delete'];
-  $roles = user_roles(FALSE, NULL);
-  foreach ($roles as $key => $role) {
+  if ($form_id == 'node_type_add_form' || $form_id == 'node_type_edit_form') {
+
+    $type = $form_state->getFormObject()->getEntity();
+    $bundle = $form['type']['#default_value'];
+    $form['nodeaccess'] = [
+      '#type' => 'details',
+      '#title' => t('Nodeaccess'),
+      '#group' => 'additional_settings',
+      '#weight' => 90,
+    ];
+    $form['nodeaccess']['enabled'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Show grant tab for this node type.'),
+      '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_grant_tab_' . $bundle, FALSE),
+    ];
+    $form['nodeaccess']['table'] = [
+      '#type' => 'table',
+      '#caption' => t(''),
+      '#header' => [
+        t('Role'),
+        t('View'),
+        t('Edit'),
+        t('Delete'),
+      ],
+      '#id' => 'nodeaccess-table',
+      '#attached' => [
+        'library' => [
+          'nodeaccess/form-styling',
+        ],
+      ],
+    ];
+
+    /**
+     * Iterate through our roles and present the default option for each one. Include authors at
+     * the bottom of the list.
+     */
+    $i = 0;
+    $permissions = ['view', 'update', 'delete'];
+    $roles = user_roles(FALSE, NULL);
+    foreach ($roles as $key => $role) {
+      foreach ($permissions as $permission) {
+        $form['nodeaccess']['table'][$i][$bundle . '_' . $key] = [
+          '#markup' => $role->label(),
+        ];
+        $form['nodeaccess']['table'][$i][$bundle . '_' . $key . '_' . $permission] = [
+          '#type' => 'checkbox',
+          '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . $key . '_' . $permission, FALSE),
+        ];
+      }
+      $i++;
+    }
+
     foreach ($permissions as $permission) {
-      $form['nodeaccess']['table'][$i][$bundle . '_' . $key] = [
-        '#markup' => $role->label(),
+      $form['nodeaccess']['table'][$i]['author'] = [
+        '#markup' => 'Node Author (Not editable per node.)',
       ];
-      $form['nodeaccess']['table'][$i][$bundle . '_' . $key . '_' . $permission] = [
+      $form['nodeaccess']['table'][$i]['author']['attributes']['class'][] = 'test';
+      $form['nodeaccess']['table'][$i][$bundle . '_author_' . $permission] = [
         '#type' => 'checkbox',
-        '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . $key . '_' . $permission, FALSE),
+        '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . 'author_' . $permission, FALSE),
       ];
     }
-    $i++;
+    $form['#entity_builders'][] = 'nodeaccess_node_type_edit_form_builder';
   }
-
-  foreach ($permissions as $permission) {
-    $form['nodeaccess']['table'][$i]['author'] = [
-      '#markup' => 'Node Author (Not editable per node.)',
-    ];
-    $form['nodeaccess']['table'][$i]['author']['attributes']['class'][] = 'test';
-    $form['nodeaccess']['table'][$i][$bundle . '_author_' . $permission] = [
-      '#type' => 'checkbox',
-      '#default_value' => $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $bundle . '_' . 'author_' . $permission, FALSE),
-    ];
-  }
-  $form['#entity_builders'][] = 'nodeaccess_node_type_edit_form_builder';
 }
 
 /**
