@@ -5,3 +5,10 @@ nodeaccess.administration:
     _title: 'Nodeaccess'
   requirements:
     _permission: 'administer nodeaccess'
+nodeaccess.autocomplete.users:
+  path: '/admin/structure/nodeaccess/autocomplete/users'
+  defaults:
+    _controller: '\Drupal\nodeaccess\Controller\UserAutocompleteController::handleAutocomplete'
+    _format: json
+  requirements:
+    _permission: 'administer nodeaccess'

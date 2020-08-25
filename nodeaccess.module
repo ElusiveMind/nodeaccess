@@ -502,6 +502,13 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
     $use_defaults = TRUE;
   }
 
+  $user_entries = [];
+  foreach ($entries as $entry) {
+    $entry = (array) $entry;
+    if ($entry['realm'] == 'nodeaccess_uid') {
+      $user_entries[$entry['gid']] = $entry;
+    }
+  }
   /**
    * If authenticated users are allowed nodeaccess, so are all roles not
    * named anonymous.
@@ -545,6 +552,39 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
       ];
     }
     $i++;
+  }
+
+  // Display the authors we already have grants for.
+  foreach ($user_entries as $gid => $entry) {
+    $query = $db->select('users_field_data', 'ufd')
+      ->fields('ufd', ['name'])
+      ->condition('uid', $gid)
+      ->execute();
+    $ids = $query->fetchAssoc();
+
+    $form['nodeaccess']['table']['existing_user-'.$gid]['name'] = [
+      '#markup' => $ids['name'] . ' (remove)',
+    ];
+    foreach ($permissions as $permission) {
+      $form['nodeaccess']['table']['existing_user-'.$gid][$gid . '-' . $permission] = [
+        '#type' => 'checkbox',
+        '#default_value' => $entry['grant_' . $permission],
+      ];
+    }
+  }
+
+  $form['nodeaccess']['table']['user'][$bundle . '_user'] = array(
+    '#type' => 'textfield',
+    '#size' => 30,
+    '#maxlength' => 60,
+    '#autocomplete_route_name' => 'nodeaccess.autocomplete.users',
+    '#default_value' => $author,
+  );
+  foreach ($permissions as $permission) {
+    $form['nodeaccess']['table']['user'][$bundle . '_user_' . $permission] = [
+      '#type' => 'checkbox',
+      '#default_value' => 0,
+    ];
   }
 
   $form['bundle'] = [
@@ -614,6 +654,69 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
           'grant_delete' => $grant['grant_delete'],
       ])
       ->execute();
+    }
+
+    /**
+     * Update user specific access roles.
+     */
+    $grant = [];
+    foreach ($values['table'] as $key => $value) {
+      list ($existing_user, $gid) = explode('-', $key);
+      if ($existing_user != 'existing_user') {
+        continue;
+      }
+
+      foreach ($value as $combo => $permission) {
+        list ($gid, $perm) = explode('-', $combo);
+        if (empty($perm)) {
+          continue;
+        }
+        $grant[$gid]['grant_' . $perm] = $permission;
+      }
+      foreach ($grant as $gid => $perm) {
+        $db->insert('nodeaccess')
+          ->fields([
+            'nid' => $values['nid'],
+            'gid' => $gid,
+            'realm' => 'nodeaccess_uid',
+            'grant_view' => (int) $perm['grant_view'],
+            'grant_update' => (int) $perm['grant_update'],
+            'grant_delete' => (int) $perm['grant_delete'],
+          ])
+          ->execute();
+      }
+      $grant = [];
+    }
+
+    /**
+     * Check for new user grants. Make sure the uid we're getting matches the user in the text.
+     */
+    if (!empty($values['table']['user'][$bundle . '_user'])) {
+      preg_match_all("/\[([^\]]*)\]/", $values['table']['user'][$bundle . '_user'], $matches);
+      $uid = $matches[1][0];
+      
+      $username = str_replace(' [' . $uid . ']', '');
+      $query = $db->select('users_field_data', 'ufd')
+        ->fields('ufd', ['uid', 'name'])
+        ->condition('name', $username)
+        ->condition('uid', $uid)
+        ->execute();
+      $ids = $query->fetchAll();
+      if (count($ids) == 1) {
+        $db->insert('nodeaccess')
+          ->fields([
+            'nid' => $values['nid'],
+            'gid' => $uid,
+            'realm' => 'nodeaccess_uid',
+            'grant_view' => (int) $values['table']['user'][$bundle . '_user_view'],
+            'grant_update' => (int) $values['table']['user'][$bundle . '_user_update'],
+            'grant_delete' => (int) $values['table']['user'][$bundle . '_user_delete'],
+        ])
+        ->execute();
+      }
+      else {
+        \Drupal::messenger()->addError(t('The user-specific permissions could not be assigned.'));
+      }
     }
 
     $db->insert('nodeaccess_nodes_enabled')
