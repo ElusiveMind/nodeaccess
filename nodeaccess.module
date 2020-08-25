@@ -296,11 +296,11 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
         $anonymous_rid = $role_map[RoleInterface::ANONYMOUS_ID];
         // If anonymous has rights to this node, we allow them.
         if ((isset($grants['rid'][$anonymous_rid]['grant_update']) && $op == 'update') ||
-           (isset($grants['rid'][$anonymous_rid]['grant_delete']) && $op == 'delete')) {
-           $access = AccessResult::allowed();
-         }
-         else {
-           $access = AccessResult::forbidden();
+          (isset($grants['rid'][$anonymous_rid]['grant_delete']) && $op == 'delete')) {
+          $access = AccessResult::allowed();
+        }
+        else {
+          $access = AccessResult::forbidden();
         }
       }
       else {
