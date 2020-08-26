@@ -6,12 +6,13 @@ use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
- * Defines a route controller for watches autocomplete form elements.
+ * A method of removing a user's assigned permissions from a piece of
+ * content. No confirmation dialogue yet. That is on the list.
  */
 class RemoveUser extends ControllerBase {
 
   /**
-   * Handler for autocomplete request.
+   * Handler for permission by account removal.
    */
   public function handleRemoval($nid, $uid) {
     $db = \Drupal::database();
