@@ -1,8 +1,6 @@
-# Nodeaccess - Per Node Access Management for Drupal 7-9
+# Nodeaccess - Node Access Control for Drupal
 
 ## INTRODUCTION
-
----
 
 This module is now fully Drupal 8 & 9 compatible and will be maintained to remain so.
 Many interface and feature enhancements have been made as part of the code cleanup

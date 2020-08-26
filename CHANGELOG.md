@@ -1,7 +1,5 @@
 # 2.0.0
 
----
-
 1. Completely re-worked the interface. Grants tab is gone and grants are placed on the node edit page for each new and existing node so that permissions can be defined at the time of node creation.
 2. Default node permissions are defined on the node-type edit page.
 3. Autocomplete of users works regardless of permissions to user profiles (accesses UID and name only for search purposes).
