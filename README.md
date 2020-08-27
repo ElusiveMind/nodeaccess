@@ -1,8 +1,10 @@
-# Nodeaccess - Node Access Control for Drupal
+# Nodeaccess - Per Node Access Management for Drupal 7-9
 
 ## INTRODUCTION
 
-This module is now fully Drupal 8 & 9 compatible and will be maintained to remain so.
+---
+
+This module is now fully Drupal 9 compatible and will be maintained to remain so.
 Many interface and feature enhancements have been made as part of the code cleanup
 and the fixing of bugs. Please see the GitHub Wiki for this project to get a complete
 set of documentation on how to use this module as well as how to update form previous
@@ -19,9 +21,12 @@ use taxonomy. You can assign permission to view, edit or delete each
 individual node by user or role. Once enabled, a 'grant' tab will appear on
 node pages. You can click this and assign permissions for that node.
 
-For a full description of the module, visit the project page below. That is also the place to submit pull requests.
+For a full description of the module, visit the project page below. That is also the 
+place to submit pull requests.
 
 [Nodeaccess GitHub repository](https://github.com/ElusiveMind/nodeaccess)
+
+[Nodeaccess Packagist repository](https://packagist.org/packages/mbagnall/nodeaccess)
 
 To submit bug reports, feature suggestions:
 

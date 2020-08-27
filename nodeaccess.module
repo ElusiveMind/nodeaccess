@@ -193,7 +193,6 @@ function nodeaccess_node_access_records(NodeInterface $node) {
 function nodeaccess_node_grants(AccountInterface $account, $op) {
   $config = \Drupal::configFactory()->get('nodeaccess.settings');
   $role_map = $config->get('role_map');
-  $role_map = array_flip($role_map);
   $roles = $account->getRoles();
 
   $rids = [];
@@ -201,11 +200,13 @@ function nodeaccess_node_grants(AccountInterface $account, $op) {
     $rids[] = $role_map[$role];
   }
 
-  return [
+  $access = [
     'nodeaccess_rid' => $rids,
     'nodeaccess_uid' => [$account->id()],
     'nodeaccess_author' => [$account->id()],
   ];
+
+  return $access;
 }
 
 /**
@@ -306,8 +307,8 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
       }
       else {
         if (!empty($grants['uid']) && array_key_exists($uid, $grants['uid'])) {
-          if ((isset($grants['uid'][$uid]['grant_update']) && $op == 'update') ||
-              (isset($grants['uid'][$uid]['grant_delete']) && $op == 'delete')) {
+          if ((!empty($grants['uid'][$uid]['grant_update']) && $op == 'update') ||
+              (!empty($grants['uid'][$uid]['grant_delete']) && $op == 'delete')) {
             $access = AccessResult::allowed();
           }
         }
@@ -315,8 +316,8 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
           $access = AccessResult::forbidden();
           foreach ($account->getRoles() as $rid) {
             $rid = $role_map[$rid];
-            if ((isset($grants['rid'][$rid]['grant_update']) && $op == 'update') ||
-                (isset($grants['rid'][$rid]['grant_delete']) && $op == 'delete')) {
+            if ((!empty($grants['rid'][$rid]['grant_update']) && $op == 'update') ||
+                (!empty($grants['rid'][$rid]['grant_delete']) && $op == 'delete')) {
               $access = AccessResult::allowed();
             }
           }
@@ -342,6 +343,7 @@ function nodeaccess_node_access(NodeInterface $node, $op, $account) {
  *   An array of grants with keys 'rid' for roles and 'uid' for users.
  */
 function _nodeaccess_get_grants($node) {
+
   $grants = [];
   $db = \Drupal::database();
 
@@ -373,12 +375,12 @@ function _nodeaccess_get_grants($node) {
   foreach ($results as $account) {
     $grants['uid'][$account->uid] = [
       'name' => $account->name,
-      'keep' => 1,
       'grant_view' => $account->grant_view,
       'grant_update' => $account->grant_update,
       'grant_delete' => $account->grant_delete,
     ];
   }
+
   return $grants;
 }
 
@@ -738,9 +740,9 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
         'nid' => $values['nid'],
         'gid' => $author_id,
         'realm' => 'nodeaccess_author',
-        'grant_view' => (int) $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $values['bundle'] . '_' . 'author_view', TRUE),
-        'grant_update' => (int) $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $values['bundle'] . '_' . 'author_update', TRUE),
-        'grant_delete' => (int) $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $values['bundle'] . '_' . 'author_delete', TRUE),
+        'grant_view' => (int) $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $values['bundle'] . '_' . 'author_view', FALSE),
+        'grant_update' => (int) $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $values['bundle'] . '_' . 'author_update', FALSE),
+        'grant_delete' => (int) $type->getThirdPartySetting('nodeaccess', 'nodeaccess_' . $values['bundle'] . '_' . 'author_delete', FALSE),
     ])->execute();
 
     $db->insert('nodeaccess_nodes_enabled')

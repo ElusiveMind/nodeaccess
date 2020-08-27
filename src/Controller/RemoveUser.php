@@ -23,6 +23,12 @@ class RemoveUser extends ControllerBase {
       ->condition('realm', 'nodeaccess_uid')
       ->execute();
 
+    $delete = $query = $db->delete('node_access')
+      ->condition('nid', $nid)
+      ->condition('gid', $uid)
+      ->condition('realm', 'nodeaccess_uid')
+      ->execute();
+
     \Drupal::messenger()->addMessage(t('The selected user was removed. No other data was saved.'));
     return new RedirectResponse('/node/' . $nid . '/edit'); 
   }
