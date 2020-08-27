@@ -26,7 +26,7 @@ function nodeaccess_install() {
     $roles_gids[$role_id] = $i;
     $i++;
   }
-  $config->set('role_map', array_flip($roles_gids));
+  $config->set('role_map', $roles_gids);
   $config->save();
 
   /**

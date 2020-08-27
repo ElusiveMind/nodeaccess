@@ -6,15 +6,6 @@ grant node permissions:
   title: Grant Node Permissions
   description: Grant Node Permissions
   restrict access: false
-grant node view:
-  title: Grant Per Node View Permissions
-  restrict access: false;
-grant node update:
-  title: Grant Per Node Update Permissions
-  restrict access: false;
-grant node delete:
-  title: Grant Per Node Delete Permissions
-  restrict access: false;
 include in nodeaccess grants:
   title: Include in Nodeaccess grants
   description: Determines if this role can be included in specific Nodeaccess grants
