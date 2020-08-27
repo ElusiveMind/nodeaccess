@@ -45,7 +45,8 @@ function nodeaccess_help($route_name, RouteMatchInterface $route_match) {
   individual node by user or role. Once enabled, a 'grant' tab will appear on
   node pages. You can click this and assign permissions for that node.</p>
   
-  <p>For a full description of the module, visit the project page below. That is also the place to submit pull requests.</p>
+  <p>For a full description of the module, visit the project page below. That is also the 
+  place to submit pull requests.</p>
 
   <a href=\"https://github.com/ElusiveMind/nodeaccess\" target=\"new\">Nodeaccess GitHub repository</a>
   
@@ -72,7 +73,6 @@ function nodeaccess_node_access_records(NodeInterface $node) {
   // Need to find out if node has own grants or whether to use defaults.
   $default = $settings->get($bundle);
   $roles_gids = $settings->get('role_map');
-  $roles_gids = array_flip($roles_gids);
 
   $nid = $node->id();
   $grants = [];
@@ -503,13 +503,17 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
     $use_defaults = TRUE;
   }
 
-  $user_entries = [];
+  $user_entries = $role_entries = [];
   foreach ($entries as $entry) {
     $entry = (array) $entry;
     if ($entry['realm'] == 'nodeaccess_uid') {
       $user_entries[$entry['gid']] = $entry;
     }
+    if ($entry['realm'] == 'nodeaccess_rid') {
+      $role_entries[$entry['gid']] = $entry;
+    }
   }
+
   /**
    * If authenticated users are allowed nodeaccess, so are all roles not
    * named anonymous.
@@ -536,7 +540,7 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
         $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
         $roles_gids = $config->get('role_map');
         $roles_gids = array_flip($roles_gids);
-        foreach ($entries as $entry) {
+        foreach ($role_entries as $entry) {
           $entry = (array) $entry;
           if ($roles_gids[$entry['gid']] == $key) {
             $default_value = $entry['grant_' . $permission];
@@ -555,8 +559,7 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
     }
     $i++;
   }
-
-  // Display the authors we already have grants for.
+  // Display the users we already have grants for.
   foreach ($user_entries as $gid => $entry) {
     $query = $db->select('users_field_data', 'ufd')
       ->fields('ufd', ['name'])
