@@ -535,6 +535,7 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
         // Pull grants from our grants table.
         $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
         $roles_gids = $config->get('role_map');
+        $roles_gids = array_flip($roles_gids);
         foreach ($entries as $entry) {
           $entry = (array) $entry;
           if ($roles_gids[$entry['gid']] == $key) {
@@ -620,7 +621,6 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
 
   $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
   $roles_gids = $config->get('role_map');
-  $roles_gids = array_flip($roles_gids);
 
   /**
    * We're going to re-write the access rules here, so clear out any that might
@@ -657,8 +657,8 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
           'grant_view' => $grant['grant_view'],
           'grant_update' => $grant['grant_update'],
           'grant_delete' => $grant['grant_delete'],
-      ])
-      ->execute();
+        ])
+        ->execute();
     }
 
     /**

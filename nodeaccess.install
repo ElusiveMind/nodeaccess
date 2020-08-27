@@ -6,6 +6,7 @@
  */
 
 use Drupal\node\Entity\NodeType;
+use Drupal\Core\Database\Database;
 
 /**
  * Implements hook_install().
@@ -116,4 +117,65 @@ function nodeaccess_schema() {
     'primary key' => ['nid', 'gid', 'realm'],
   ];
   return $schema;
+}
+
+/**
+ * Create our nodeaccess_nodes_enabled table.
+ */
+function nodeaccess_update_8200() {
+  $spec = [];
+  $spec = [
+    'fields' => [
+      'nid' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+    ],
+    'primary key' => ['nid'],
+  ];
+  $schema = Database::getConnection()->schema();
+  $schema->createTable('nodeaccess_nodes_enabled', $spec);
+}
+
+/**
+ * Convert old Nodeaccess data.
+ */
+function nodeaccess_update_8201() {
+  $db = \Drupal::database();
+
+  $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
+  $allowed_types = $config->get('allowed_types');
+  $role_map = $config->get('role_map');
+
+  foreach($role_map as $machine_name => $rid) {
+    foreach($allowed_types as $node_type => $enabled) {
+      if ($enabled == 1) {
+        $type = NodeType::load($node_type);
+        $role = $config->get($node_type);
+        $view = $role[$machine_name]['grant_view'];
+        $update = $role[$machine_name]['grant_update'];
+        $delete = $role[$machine_name]['grant_delete'];;
+
+        $type->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $node_type . '_' . $machine_name . '_view', $view);
+        $type->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $node_type . '_' . $machine_name . '_update', $update);
+        $type->setThirdPartySetting('nodeaccess', 'nodeaccess_' . $node_type . '_' . $machine_name . '_delete', $delete);
+        $type->setThirdPartySetting('nodeaccess', 'nodeaccess_grant_tab_' . $node_type, $enabled);
+      }
+    }
+  }
+
+  $entries = $db->select('nodeaccess', 'n')
+    ->fields('n', ['nid'])
+    ->distinct()
+    ->execute()
+    ->fetchAll();
+  foreach ($entries as $entry) {
+    $db->insert('nodeaccess_nodes_enabled')
+      ->fields([
+        'nid' => $entry->nid,
+      ])
+      ->execute();
+  }
 }
