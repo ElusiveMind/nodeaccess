@@ -27,7 +27,7 @@ function nodeaccess_help($route_name, RouteMatchInterface $route_match) {
   <h1>Nodeaccess - Node Access Control for Drupal</h1>
 
   <h2>INTRODUCTION</h2>
-  
+
   <p>This module is now fully Drupal 8 & 9 compatible and will be maintained to remain so.
   Many interface and feature enhancements have been made as part of the code cleanup
   and the fixing of bugs. Please see the GitHub Wiki for this project to get a complete
@@ -35,21 +35,21 @@ function nodeaccess_help($route_name, RouteMatchInterface $route_match) {
   versions of Nodeaccess that have been hosted on Drupal.org. This is also the place
   to learn how to configure Nodeaccess. That information has been removed from this file
   as it was tough to understand without the visuals.</p>
-  
+
   <a href=\"https://github.com/ElusiveMind/nodeaccess/wiki\" target=\"new\">Nodeaccess Wiki</a>
-  
+
   <p>This module allows you to manage permissions for nodes by role and user. In
   other words, it implements per node access control for users and groups. With
   this module, you can restrict access to any individual node without having to
   use taxonomy. You can assign permission to view, edit or delete each
   individual node by user or role. Once enabled, a 'grant' tab will appear on
   node pages. You can click this and assign permissions for that node.</p>
-  
-  <p>For a full description of the module, visit the project page below. That is also the 
+
+  <p>For a full description of the module, visit the project page below. That is also the
   place to submit pull requests.</p>
 
   <a href=\"https://github.com/ElusiveMind/nodeaccess\" target=\"new\">Nodeaccess GitHub repository</a>
-  
+
   <p>To submit bug reports, feature suggestions:</p>
 
   <a href=\"https://github.com/ElusiveMind/nodeaccess/issues\" target=\"new\">Nodeaccess issue queue</a>";
@@ -58,7 +58,7 @@ function nodeaccess_help($route_name, RouteMatchInterface $route_match) {
     case 'help.page.nodeaccess':
       return $nodeaccess_text;
       break;
-      
+
   }
 }
 
@@ -100,12 +100,12 @@ function nodeaccess_node_access_records(NodeInterface $node) {
       // Anonymous user setting.
       $grants[] = [
         'gid' => $roles_gids[RoleInterface::ANONYMOUS_ID],
-        'grant_view' => in_array('access content', $role_perms[RoleInterface::ANONYMOUS_ID]),
+        'grant_view' => (int) in_array('access content', $role_perms[RoleInterface::ANONYMOUS_ID]),
       ];
       // Authenticated user setting.
       $grants[] = [
         'gid' => $roles_gids[RoleInterface::AUTHENTICATED_ID],
-        'grant_view' => in_array('access content', $role_perms[RoleInterface::AUTHENTICATED_ID]),
+        'grant_view' => (int) in_array('access content', $role_perms[RoleInterface::AUTHENTICATED_ID]),
       ];
     }
   }
@@ -142,12 +142,12 @@ function nodeaccess_node_access_records(NodeInterface $node) {
         // Anonymous user setting.
         $grants[] = [
           'gid' => $roles_gids[RoleInterface::ANONYMOUS_ID],
-          'grant_view' => in_array('bypass node access', $role_perms[RoleInterface::ANONYMOUS_ID]),
+          'grant_view' => (int) in_array('bypass node access', $role_perms[RoleInterface::ANONYMOUS_ID]),
         ];
         // Authenticated user setting.
         $grants[] = [
           'gid' => $roles_gids[RoleInterface::AUTHENTICATED_ID],
-          'grant_view' => in_array('bypass node access', $role_perms[RoleInterface::AUTHENTICATED_ID]),
+          'grant_view' => (int) in_array('bypass node access', $role_perms[RoleInterface::AUTHENTICATED_ID]),
         ];
       }
     }
@@ -486,7 +486,7 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
    * the defaults. Keep in mind, this does not mean if no grants are given, defaults
    * should only be displayed if no grant records exist for a given node. Default grants
    * do not take into consideration user-specific grants, although this is an edge case
-   * because saving a user-specific grant should save grants for the current node 
+   * because saving a user-specific grant should save grants for the current node
    * as well.
    */
   $use_defaults = FALSE;
@@ -613,11 +613,11 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
  * Our custom submit hook as defined in nodeaccess_form_node_form_alter. This
  * is called after the content has already been saved to the database and the
  * node id is available for us to use.
- * 
+ *
  * @see nodeaccess_form_node_form_alter
  */
 function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) {
-  
+
   $allowed_roles = nodeaccess_get_allowed_roles();
   $db = \Drupal::database();
   $values = $form_state->getValues();
@@ -751,7 +751,7 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
       ])
       ->execute();
   }
-  
+
   \Drupal::entityTypeManager()->getAccessControlHandler('node')->acquireGrants($node);
 
   $tags = ['node:' . $node->id()];
