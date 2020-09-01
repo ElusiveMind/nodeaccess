@@ -437,7 +437,7 @@ function nodeaccess_form_node_form_alter(&$form, FormStateInterface $form_state,
    * on the form.
    */
   $enabled = $type->getThirdPartySetting('nodeaccess', 'nodeaccess_grant_tab_' . $bundle, FALSE);
-  if ($enabled === FALSE) {
+  if ($enabled == FALSE) {
     return;
   }
 
@@ -623,6 +623,8 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
   $values = $form_state->getValues();
   $roles = user_roles(FALSE, NULL);
   $bundle = $values['bundle'];
+  $type = NodeType::load($values['bundle']);
+  $node = Node::load($values['nid']);
 
   $config = \Drupal::configFactory()->getEditable('nodeaccess.settings');
   $roles_gids = $config->get('role_map');
@@ -732,8 +734,6 @@ function nodeaccess_custom_entity_submit($form, FormStateInterface $form_state) 
     /**
      * Handle author grants from the ones defined in our content type definition.
      */
-    $type = NodeType::load($values['bundle']);
-    $node = Node::load($values['nid']);
     $author_id = $node->getOwner()->id();
     $db->insert('nodeaccess')
       ->fields([
