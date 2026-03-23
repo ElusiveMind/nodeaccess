@@ -1,0 +1,10 @@
+name: Nodeaccess
+description: Provides access on a per node basis.
+package: Access control
+configure: nodeaccess.administration
+type: module
+core_version_requirement: ^11
+
+dependencies:
+  - drupal:node
+

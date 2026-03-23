@@ -1,0 +1,13 @@
+{
+  "name": "mbagnall/nodeaccess",
+  "description": "Provides access control to Drupal nodes based on role. Access can also be controlled by specific user.",
+  "type": "drupal-module",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": "^8.3",
+    "drupal/core-recommended": "^11.0"
+  },
+  "conflict": {
+    "drupal/nodeaccess": "*"
+  }
+}

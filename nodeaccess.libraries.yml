@@ -1,0 +1,5 @@
+form-styling:
+  version: 1.x
+  css:
+    component:
+      css/form.css: {}
