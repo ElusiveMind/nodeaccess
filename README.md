@@ -1,33 +1,80 @@
 # Nodeaccess - Per Node Access Management for Drupal 11
 
-## INTRODUCTION
+## Introduction
 
----
+This module allows you to manage permissions for individual nodes by role and
+user. You can restrict access to any node without having to use taxonomy by
+assigning view, edit, or delete permissions per node to specific roles or users.
 
-This module is now fully Drupal 11 compatible and will be maintained to remain so.
-Many interface and feature enhancements have been made as part of the code cleanup
-and the fixing of bugs. Please see the GitHub Wiki for this project to get a complete
-set of documentation on how to use this module as well as how to update form previous
-versions of Nodeaccess that have been hosted on Drupal.org. This is also the place
-to learn how to configure Nodeaccess. That information has been removed from this file
-as it was tough to understand without the visuals.
+Grants are configured directly on the node add/edit form rather than on a
+separate tab. Default grants are defined per content type on each content type's
+edit page.
 
-[Nodeaccess Wiki](https://github.com/ElusiveMind/nodeaccess/wiki)
+For full documentation including configuration guides with screenshots, see the
+[Nodeaccess Wiki](https://github.com/ElusiveMind/nodeaccess/wiki).
 
-This module allows you to manage permissions for nodes by role and user. In
-other words, it implements per node access control for users and groups. With
-this module, you can restrict access to any individual node without having to
-use taxonomy. You can assign permission to view, edit or delete each
-individual node by user or role. Once enabled, a 'grant' tab will appear on
-node pages. You can click this and assign permissions for that node.
+## Requirements
 
-For a full description of the module, visit the project page below. That is also the 
-place to submit pull requests.
+- Drupal 11
+- PHP 8.3+
 
-[Nodeaccess GitHub repository](https://github.com/ElusiveMind/nodeaccess)
+## Installation
 
-[Nodeaccess Packagist repository](https://packagist.org/packages/mbagnall/nodeaccess)
+Install via Composer:
 
-To submit bug reports, feature suggestions:
+```
+composer require mbagnall/nodeaccess
+```
 
-[Nodeaccess issue queue](https://github.com/ElusiveMind/nodeaccess/issues)
+Then enable the module:
+
+```
+drush en nodeaccess
+```
+
+> **Note:** This package conflicts with `drupal/nodeaccess` (the legacy
+> Drupal.org version). You cannot have both installed at the same time.
+
+## Configuration
+
+1. **Enable per content type:** Go to **Administration > Structure > Content
+   types**, edit a content type, and check "Show grant tab for this node type"
+   under the Nodeaccess section. Set default role permissions for view, edit, and
+   delete here as well.
+
+2. **Assign role visibility:** Go to **Administration > People > Permissions**
+   and grant the "Include in Nodeaccess grants" permission to roles that should
+   appear in per-node grant forms. If the "Authenticated user" role has this
+   permission, all non-anonymous roles are automatically included.
+
+3. **Per-node grants:** When creating or editing a node (for an enabled content
+   type), expand the Nodeaccess section, check "Engage nodeaccess control for
+   this node", and set role and user-specific permissions.
+
+4. **Admin page:** Visit **Administration > Structure > Nodeaccess** to view or
+   rebuild the role-to-grant-ID mapping.
+
+## Permissions
+
+| Permission | Description |
+|---|---|
+| Administer Nodeaccess | Access the Nodeaccess administration pages (restricted) |
+| Grant Node Permissions | Allow granting permissions on individual nodes |
+| Include in Nodeaccess grants | Determines if a role appears in per-node grant forms |
+
+## Testing
+
+PHPUnit tests are located in `tests/src/`. To run them from the Drupal root:
+
+```
+vendor/bin/phpunit web/modules/drupal/nodeaccess/tests/
+```
+
+Kernel tests cover grant records, access checks, role map management, and
+installation. Functional tests cover the admin configuration form and node form
+integration.
+
+## Links
+
+- [GitHub repository](https://github.com/ElusiveMind/nodeaccess) (pull requests)
+- [Issue queue](https://github.com/ElusiveMind/nodeaccess/issues) (bugs, feature requests)
