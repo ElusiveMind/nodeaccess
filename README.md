@@ -10,9 +10,6 @@ Grants are configured directly on the node add/edit form rather than on a
 separate tab. Default grants are defined per content type on each content type's
 edit page.
 
-For full documentation including configuration guides with screenshots, see the
-[Nodeaccess Wiki](https://github.com/ElusiveMind/nodeaccess/wiki).
-
 ## Requirements
 
 - Drupal 11
